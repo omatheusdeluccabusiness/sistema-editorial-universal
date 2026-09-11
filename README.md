@@ -2,6 +2,17 @@
 
 Projeto-modelo para configurar e operar um social media editorial dentro do Codex. Cada cliente recebe uma cópia independente, responde à entrevista de marca e passa a produzir conteúdos com sua própria voz, posicionamento e identidade.
 
+## Instalação sem conta no GitHub
+
+1. [Baixe o pacote em ZIP](https://github.com/omatheusdeluccabusiness/sistema-editorial-universal/archive/refs/heads/main.zip).
+2. Extraia o arquivo no computador.
+3. Abra a pasta `projeto-cliente` como projeto local no Codex.
+4. Inicie uma conversa e envie:
+
+   > Use $social-media-editorial para configurar meu sistema editorial. Faça uma entrevista comigo, uma pergunta por vez.
+
+Não é necessário criar conta no GitHub. Preserve a pasta oculta `.agents`, pois é nela que a skill está instalada.
+
 ## Começo rápido
 
 1. Crie uma cópia deste repositório para o cliente.

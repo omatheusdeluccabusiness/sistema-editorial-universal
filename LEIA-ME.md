@@ -4,6 +4,10 @@ Base editorial e visual personalizável para mentorias. Versão 1.1, 11 de setem
 
 O pacote contém um projeto-modelo pronto para ser duplicado para cada cliente. A skill conduz a configuração da marca, faz curadoria, pesquisa, escreve, revisa e mantém a fila editorial. O trabalho acontece na conversa do Codex do cliente e nos arquivos da própria cópia.
 
+## Baixar sem conta no GitHub
+
+O cliente pode [baixar o ZIP diretamente](https://github.com/omatheusdeluccabusiness/sistema-editorial-universal/archive/refs/heads/main.zip), extrair o arquivo e abrir `projeto-cliente` no Codex. Não precisa criar conta no GitHub. A extração deve preservar a pasta oculta `.agents`.
+
 ## Começar com um cliente
 
 1. Duplique a pasta `projeto-cliente` e dê à cópia o nome do cliente. Preserve esta matriz para as próximas mentorias.
