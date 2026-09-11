@@ -1,0 +1,8 @@
+interface:
+  display_name: "Social Media Editorial"
+  short_description: "Método completo para conteúdo e carrosséis"
+  brand_color: "#153C2E"
+  default_prompt: "Use $social-media-editorial para configurar ou executar o sistema editorial desta marca."
+
+policy:
+  allow_implicit_invocation: true

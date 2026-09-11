@@ -1,65 +1,63 @@
 # Sistema Editorial Universal
 
-Base editorial e visual personalizável para mentorias. Versão 1.1, 11 de setembro de 2026.
+Base editorial e visual personalizável para mentorias. Versão 1.2, 11 de setembro de 2026.
 
-O pacote contém um projeto-modelo pronto para ser duplicado para cada cliente. A skill conduz a configuração da marca, faz curadoria, pesquisa, escreve, revisa e mantém a fila editorial. O trabalho acontece na conversa do Codex do cliente e nos arquivos da própria cópia.
+O pacote é simultaneamente um projeto de cliente e uma skill local do Codex. Ele não entrega uma folha em branco: já contém a arquitetura de produção que controla prosa, densidade, retenção, clareza e revisão. A entrevista serve para ensinar a identidade de cada marca.
 
-## Baixar sem conta no GitHub
+## Baixar e abrir
 
-O cliente pode [baixar o ZIP diretamente](https://github.com/omatheusdeluccabusiness/sistema-editorial-universal/archive/refs/heads/main.zip), extrair o arquivo e abrir `projeto-cliente` no Codex. Não precisa criar conta no GitHub. A extração deve preservar a pasta oculta `.agents`.
+O cliente pode [baixar o ZIP diretamente](https://github.com/omatheusdeluccabusiness/sistema-editorial-universal/archive/refs/heads/main.zip), extrair e abrir **a pasta extraída inteira** no Codex. Não precisa criar conta no GitHub.
 
-## Começar com um cliente
+Na raiz precisam aparecer `.agents`, `editor-carrosseis`, `operacao` e este arquivo. Se a pasta `.agents` não estiver presente, a extração ficou incompleta.
 
-1. Duplique a pasta `projeto-cliente` e dê à cópia o nome do cliente. Preserve esta matriz para as próximas mentorias.
-2. Abra essa cópia como projeto local no Codex do cliente.
-3. Inicie uma conversa e peça: **Use $social-media-editorial para configurar meu sistema editorial. Faça uma entrevista comigo, uma pergunta por vez.**
-4. O cliente pode responder sozinho ou junto com o mentor. Também pode fornecer materiais que já tenha.
-5. Revise o documento da marca e aprove as decisões. Depois peça uma peça-piloto por vez para calibrar a escrita.
-6. Quando os formatos escolhidos estiverem aprovados, peça: **Monte a operação editorial da semana.**
-7. Para carrosséis aprovados, peça: **Monte esta peça no editor usando o template configurado.**
+## Primeira conversa
 
-A skill está em [SKILL.md](projeto-cliente/.agents/skills/social-media-editorial/SKILL.md). A pasta oculta `.agents` faz parte do pacote e deve acompanhar a cópia. Se a skill não aparecer no Codex, abra uma nova conversa nesse projeto e confira se a extração preservou essa pasta. A instalação local segue a [documentação oficial de skills](https://learn.chatgpt.com/docs/build-skills).
+Envie:
 
-## O que personalizar
+> Use $social-media-editorial para configurar meu sistema editorial. Faça uma entrevista comigo, uma pergunta por vez.
 
-O [documento da marca](projeto-cliente/.agents/skills/social-media-editorial/cliente/marca.md) reúne posicionamento, público, tensões, pilares, voz, objetivos, ofertas e CTAs. Os [formatos](projeto-cliente/.agents/skills/social-media-editorial/cliente/formatos.md) definem linhas ativas, canais, densidade, ganchos, entregas e cadência.
+O cliente pode responder sozinho ou com o mentor. Se já houver briefing, posts aprovados e materiais de voz, anexe-os. A skill registra as decisões em [marca.md](.agents/skills/social-media-editorial/cliente/marca.md) e [formatos.md](.agents/skills/social-media-editorial/cliente/formatos.md).
 
-As referências de escrita oferecem duas revisões complementares de autoria e fluidez. Foram adaptadas para esta base: preferências de um cliente não são obrigações para todos. A orientação política, o nicho, a quantidade de slides e o estilo visual são decisões individuais.
+Os formatos já têm padrões ativos. O cliente só precisa aprovar ou alterar o que for particular. Não deixe “quantidade de texto” em aberto esperando que o modelo adivinhe.
 
-O roteiro completo de aplicação está no [guia da mentoria](GUIA-DA-MENTORIA.md). Os critérios para testar a personalização estão nos [cenários de validação](VALIDACAO.md).
+## Calibração
+
+1. Termine o mínimo da entrevista: público, objetivo, pilares, voz, posicionamento e CTA.
+2. Peça uma peça inédita por vez.
+3. Dê feedback concreto sobre gancho, fluidez, densidade e vocabulário.
+4. Quando uma correção valer para o futuro, diga: `Esta preferência é permanente. Atualize a regra e registre o exemplo.`
+5. Teste outro tema para verificar se o padrão se repete.
+
+Os padrões de fábrica usam carrosséis de storytelling, análise/opinião e notícia. A marca pode desativar qualquer linha ou ativar outros meios.
 
 ## Uso diário
 
-- **Execute o conteúdo de hoje.**
-- **Crie uma análise para o meu público e escolha a pauta.**
-- **Revise este texto com minha voz.**
-- **Aprovado. Registre esta versão.**
-- **Essa preferência vale para todos os próximos conteúdos. Atualize a regra.**
-- **Publicado. Atualize o calendário.**
+- `Monte a operação editorial da semana.`
+- `Execute o conteúdo de hoje.`
+- `Crie uma análise para o meu público e escolha a pauta.`
+- `Revise este texto com a voz da marca.`
+- `Aprovado. Registre esta versão.`
+- `Aprovado. Monte no editor.`
+- `Publicado. Atualize o calendário.`
 
-A aprovação e a escolha de gancho seguem o acordo de cada cliente. O sistema não repete perguntas já respondidas nem exige um tema quando a curadoria foi delegada.
+## Editor incluído
 
-## Editor de carrosséis incluído
+O pacote contém os templates Tweet, Stories, Stories com Fundo e Bloco de Notas. No Windows, `editor-carrosseis/ABRIR-EDITOR.cmd` abre o painel em `http://localhost:8797`.
 
-Cada cópia do cliente contém `editor-carrosseis`, com quatro templates:
+Configure nome, arroba e preferências em [visual.md](.agents/skills/social-media-editorial/cliente/visual.md). O template padrão é Tweet até que o cliente aprove outro.
 
-- Modelo Tweet;
-- Stories;
-- Stories com Fundo;
-- Bloco de Notas.
+O editor pode importar a copy aprovada e imagens, abrir a versão recém-gerada e exportar PNG. Templates proprietários de marcas específicas não estão incluídos.
 
-O ANB Style não está incluído. A skill pode importar a copy aprovada, inserir imagens fornecidas ou selecionadas, abrir exatamente a versão gerada e deixar a peça pronta para ajuste e exportação em PNG. No Windows, `editor-carrosseis/ABRIR-EDITOR.cmd` abre o painel local em `http://localhost:8797`.
+## Diagnóstico
 
-Configure nome, arroba, template por linha e regras de imagem em [visual.md](projeto-cliente/.agents/skills/social-media-editorial/cliente/visual.md). A identidade do cliente é aplicada na importação; nenhum perfil da matriz é reutilizado.
+Se a resposta parecer genérica, envie:
 
-## Entrega e limites
+> Use $social-media-editorial e informe quais arquivos de configuração você carregou, quais padrões editoriais estão ativos e o que ainda não foi configurado. Não produza conteúdo ainda.
 
-Inclui arquitetura editorial, entrevista, modelos preenchíveis, playbooks, revisão de escrita, operação em Markdown, editor visual, importador e quatro templates. A criação editorial em conversa não requer Python; o editor local requer Python 3 e usa somente a biblioteca padrão.
+O resultado esperado está em [TESTE-RAPIDO.md](TESTE-RAPIDO.md). A skill está em [SKILL.md](.agents/skills/social-media-editorial/SKILL.md).
 
-Publicação em redes, agendamento, dashboard e coleta automática de métricas não fazem parte deste pacote. A exportação dos slides é local. Integrações de Telegram, Instagram e geração de imagens exibidas em alguns templates permanecem desativadas nesta versão neutra.
+## Limites
 
-A estrutura foi verificada tecnicamente. A voz de cada cliente precisa ser validada com conteúdo real; essa aprovação não pode ser herdada de outro projeto.
+Publicação em redes, agendamento, dashboard e coleta automática de métricas não fazem parte do pacote. A criação editorial não exige Python; o editor local exige Python 3.
 
-## Preparar para GitHub depois
-
-O pacote contém apenas a base neutra. Trabalhe com cópias de clientes fora da matriz. Antes de publicar uma cópia preenchida, retire os materiais privados e obtenha autorização para compartilhar exemplos. Não foi criado repositório nem enviada informação a serviço externo nesta entrega.
+A skill pode reproduzir o método, mas a voz precisa ser calibrada com exemplos reais de cada cliente. Nunca coloque dados privados de um cliente na matriz pública.

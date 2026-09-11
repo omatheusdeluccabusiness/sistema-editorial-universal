@@ -1,6 +1,6 @@
 # Exemplos aprovados
 
-Nenhum exemplo aprovado.
+Estado: nenhum exemplo de voz aprovado. Enquanto esta seção estiver vazia, use o método editorial padrão e uma voz neutra compatível com marca.md. A ausência de exemplo não reduz densidade, estrutura ou revisão.
 
 Para cada teste, registrar:
 - Linha, formato, template e tema.

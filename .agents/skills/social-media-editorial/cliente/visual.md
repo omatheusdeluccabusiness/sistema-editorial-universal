@@ -6,7 +6,7 @@ Estado: editor local incluído; identidade e padrões do cliente ainda não conf
 - Localização ou URL real: `editor-carrosseis`; interface em `http://localhost:8797` quando iniciada.
 - Método disponível: `editor-carrosseis/scripts/importar_carrossel.py` e operação pela interface.
 - Identidade e perfil da marca:
-- Templates disponíveis e linhas permitidas: Tweet (`tweet`), Stories (`stories`), Stories com Fundo (`stories-fundo`) e Bloco de Notas (`notes`). Definir padrão por linha.
+- Templates disponíveis e linhas permitidas: Tweet (`tweet`), Stories (`stories`), Stories com Fundo (`stories-fundo`) e Bloco de Notas (`notes`). Padrão inicial: Tweet para todas as linhas; alterar quando o cliente aprovar.
 - Dimensões: 4:5, com variações internas configuráveis conforme o template.
 - Mapa de layouts e caixas de texto:
 - Limites de texto observados:
@@ -20,4 +20,4 @@ Estado: editor local incluído; identidade e padrões do cliente ainda não conf
 - Como abrir a versão recém-gerada: usar a URL retornada em JSON; não recarregar uma sessão antiga.
 - Como verificar texto e imagem após importar:
 
-O editor não inclui o ANB Style. Não presuma perfil de outro cliente. Antes da primeira produção, preencha a identidade e defina o template padrão ou a regra de escolha.
+O editor não inclui templates proprietários de marcas específicas. Não presuma perfil de outro cliente. Antes da primeira produção visual, preencha a identidade. Na ausência de outra escolha aprovada, use Tweet.

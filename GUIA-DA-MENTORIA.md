@@ -2,42 +2,40 @@
 
 ## Resultado esperado
 
-Cada cliente termina com um sistema editorial que reconhece sua marca, consegue propor pautas e entrega peças no padrão aprovado. A configuração deve extrair decisões que mudam o conteúdo, com exemplos, em vez de preencher campos com adjetivos vagos.
+O cliente termina com um projeto que reconhece sua marca, escolhe pautas e entrega carrosséis no padrão aprovado. O método editorial já vem pronto; a mentoria extrai decisões que tornam o resultado particular.
 
-## Encontro 1: direção e matéria-prima
+## Encontro 1: cérebro da marca
 
-Abra a cópia do cliente no Codex e inicie a entrevista. Comece por negócio, público e objetivo. Investigue uma situação concreta do público, o que a marca acredita sobre ela e qual ação faz sentido depois da leitura.
+Abra a pasta completa no Codex e invoque `$social-media-editorial`. Comece por negócio, público e objetivo. Depois investigue pilares, crenças, tensões, exemplos de fala, oferta e CTA.
 
-Para cada tese, peça uma cena, uma consequência e uma ressalva. Separe histórias pessoais confirmadas de exemplos hipotéticos. Se o cliente não tiver uma posição formada, registre a questão como aberta.
+Para cada tese, peça uma cena, uma consequência e uma ressalva. Separe experiência confirmada de hipótese. Evite descrições vazias como “tom humano e autoridade”: peça amostras reais.
 
-O agente sintetiza as respostas em marca.md e identifica o que está confirmado, proposto ou pendente. Você revisa com o cliente. Evite aprovar apenas “tom humano, autoridade e conteúdo de valor”: peça um parágrafo que exemplifique a voz.
+O agente atualiza marca.md. Revise com o cliente antes de considerar a identidade aprovada.
 
-## Encontro 2: formatos e primeiras peças
+## Encontro 2: formatos e pilotos
 
-Escolha as linhas que o cliente consegue manter. Storytelling, análise e notícia descrevem funções editoriais; carrossel, vídeo e texto descrevem meios de publicação. Uma análise pode virar carrossel ou vídeo.
-
-Defina os formatos, a capacidade de produção, a política de gancho e o CTA. Quantidade de slides, palavras e duração são calibradas pelo canal e por um exemplo aprovado.
+Apresente os padrões ativos de formatos.md. Em vez de perguntar tudo do zero, confirme o que permanece e registre somente exceções.
 
 Peça uma peça inédita por vez. Avalie:
-- A pauta interessa ao público definido?
-- A voz poderia ser reconhecida sem o nome do perfil?
-- O leitor entende sem conhecer previamente o tema?
-- O gancho cria interesse e o desenvolvimento cumpre a promessa?
-- A extensão é adequada ao design ou à gravação?
-- A ação final existe e corresponde à oferta?
 
-Reescreva o primeiro teste. Faça depois outro tema do mesmo formato para verificar transferência. Registre apenas o que o cliente aprovar, incluindo o motivo. Nota numérica é opcional; uma correção concreta é mais útil.
+- pauta e ângulo interessam ao público?
+- a capa abre curiosidade ou tensão concreta?
+- o texto está em prosa e funciona sem diagramação?
+- a maioria do miolo tem parágrafos desenvolvidos?
+- a densidade está dentro da faixa?
+- um leigo culto entende na primeira leitura?
+- conclusão e CTA são coerentes?
+
+Reescreva o primeiro teste e depois mude o tema. Registre trechos aprovados e rejeitados com motivo.
 
 ## Encontro 3: autonomia
 
-Abra uma conversa nova na cópia do cliente. Peça planejamento ou uma peça sem fornecer novamente o briefing. Confira se o agente encontra os arquivos, usa as escolhas salvas, propõe pauta e preserva a voz.
+Abra uma conversa nova no mesmo projeto. Peça uma peça sem repetir o briefing. Verifique se a skill carrega os arquivos, escolhe pauta, preserva voz, usa dez slides quando aplicável e respeita as faixas.
 
-Faça o teste com cada formato ativo. Se surgir erro, localize sua origem: briefing incompleto, fonte fraca, regra contraditória ou exemplo insuficiente. Corrija a camada responsável.
+Se falhar, identifique a camada: descoberta da skill, briefing, formato, escrita, exemplo, pesquisa ou design. Corrija a camada responsável, não apenas a peça.
 
-## Acompanhamento
+## Entrega
 
-O cliente usa o calendário e informa o que aprovou ou publicou. Métricas são opcionais e entram apenas quando disponíveis. Resultados podem orientar hipóteses; não atribua causalidade a uma única publicação.
+O cliente abre sempre a pasta inteira. Para começar uma semana, pede `Monte a operação editorial da semana.` No dia a dia, pede `Execute o conteúdo de hoje.` Depois da aprovação, pede montagem no editor.
 
-Quando uma melhoria servir a vários clientes, transforme-a em proposta para a matriz. Preferências individuais permanecem nas respectivas cópias. Atualizar a matriz não atualiza cópias já entregues: compare as mudanças e preserve o documento de cada marca.
-
-O modelo é pronto para personalizar. A competência editorial específica é validada em cada implantação.
+Melhorias universais voltam para a matriz. Preferências particulares ficam apenas na cópia daquele cliente.

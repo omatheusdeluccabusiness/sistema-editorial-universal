@@ -1,53 +1,57 @@
 # Sistema Editorial Universal
 
-Projeto-modelo para configurar e operar um social media editorial dentro do Codex. Cada cliente recebe uma cópia independente, responde à entrevista de marca e passa a produzir conteúdos com sua própria voz, posicionamento e identidade.
+Projeto-modelo para configurar e operar um social media editorial dentro do Codex. A skill já traz um método forte de curadoria, escrita, revisão e carrosséis; cada cliente personaliza marca, público, posicionamento, voz, oferta, CTA e identidade.
 
 ## Instalação sem conta no GitHub
 
 1. [Baixe o pacote em ZIP](https://github.com/omatheusdeluccabusiness/sistema-editorial-universal/archive/refs/heads/main.zip).
-2. Extraia o arquivo no computador.
-3. Abra a pasta `projeto-cliente` como projeto local no Codex.
-4. Inicie uma conversa e envie:
+2. Extraia o arquivo.
+3. Abra **a própria pasta extraída** como projeto local no Codex. Não abra somente `editor-carrosseis`.
+4. Inicie uma conversa nova e envie:
 
    > Use $social-media-editorial para configurar meu sistema editorial. Faça uma entrevista comigo, uma pergunta por vez.
 
-Não é necessário criar conta no GitHub. Preserve a pasta oculta `.agents`, pois é nela que a skill está instalada.
+A pasta oculta `.agents` fica na raiz e contém a skill. Não é necessário instalar globalmente nem ter conta no GitHub.
 
-## Começo rápido
+## O que mudou na versão 1.2
 
-1. Crie uma cópia deste repositório para o cliente.
-2. Abra a pasta `projeto-cliente` como projeto local no Codex.
-3. Inicie uma conversa e envie:
+- a pasta baixada agora é diretamente o projeto do cliente;
+- a skill está em `.agents/skills/social-media-editorial`, na raiz reconhecida pelo Codex;
+- estrutura, densidade e revisão deixam de depender de campos vazios;
+- storytelling e análise usam dez slides como referência;
+- há faixas de palavras, regra de prosa e auditoria contra cadência picotada;
+- a entrevista personaliza o método sem apagá-lo.
 
-   > Use $social-media-editorial para configurar meu sistema editorial. Faça uma entrevista comigo, uma pergunta por vez.
+## Uso rápido
 
-4. Aprove as decisões registradas nos arquivos de cliente.
-5. Depois envie `Monte a operação editorial da semana.`
-6. No uso diário, envie `Execute o conteúdo de hoje.`
+Depois da entrevista e de uma peça-piloto:
 
-O guia completo está em [LEIA-ME.md](LEIA-ME.md).
+- `Monte a operação editorial da semana.`
+- `Execute o conteúdo de hoje.`
+- `Aprovado. Monte esta peça no editor usando o template configurado.`
 
-## O que está incluído
+Para conferir a instalação, use o roteiro em [TESTE-RAPIDO.md](TESTE-RAPIDO.md). O guia completo está em [LEIA-ME.md](LEIA-ME.md).
+
+## Conteúdo do pacote
 
 - skill editorial universal em `.agents/skills/social-media-editorial`;
-- documentos preenchíveis de marca, voz, formatos e identidade visual;
-- curadoria, pesquisa, escrita, revisão e calendário editorial;
-- editor local de carrosséis e importador de copy;
-- templates Tweet, Stories, Stories com Fundo e Bloco de Notas;
-- exemplos e testes automatizados.
+- documentos preenchíveis de marca, formatos, exemplos e identidade visual;
+- playbooks de storytelling, análise/opinião e notícia;
+- duas revisões obrigatórias de escrita humanizada;
+- calendário editorial;
+- editor local de carrosséis;
+- templates Tweet, Stories, Stories com Fundo e Bloco de Notas.
 
-O template ANB Style e os dados privados da operação original não fazem parte desta distribuição.
+Templates proprietários da operação original não fazem parte desta distribuição.
 
 ## Editor de carrosséis
 
-No Windows, execute `projeto-cliente/editor-carrosseis/ABRIR-EDITOR.cmd`. O editor requer Python 3 e abre localmente em `http://localhost:8797`.
+No Windows, execute `editor-carrosseis/ABRIR-EDITOR.cmd`. O editor requer Python 3 e abre em `http://localhost:8797`.
 
-Para importar uma peça aprovada pelo Codex:
+Importação manual:
 
 ```powershell
-python projeto-cliente/editor-carrosseis/scripts/importar_carrossel.py caminho/da-copy.md --template tweet --profile-name "Nome da Marca" --handle "arroba"
+python editor-carrosseis/scripts/importar_carrossel.py caminho/da-copy.md --template tweet --profile-name "Nome da Marca" --handle "arroba"
 ```
 
-## Uso responsável da matriz
-
-Mantenha este repositório como matriz. Crie uma cópia separada para cada cliente e nunca preencha a matriz com informações confidenciais. Publicação, agendamento e coleta automática de métricas não estão incluídos.
+Mantenha uma cópia separada para cada cliente. Publicação, agendamento e coleta automática de métricas não estão incluídos.
