@@ -1,0 +1,780 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Editor de Carrosséis</title>
+  <script>
+    (() => {
+      const key = 'carrossel-editor-ui-theme-v1';
+      let theme = 'light';
+      try { theme = localStorage.getItem(key) || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); }
+      catch (_) { theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
+      document.documentElement.dataset.uiTheme = theme;
+    })();
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --mesa: #f2f2f4;
+      --papel: #ffffff;
+      --papel-secundario: #f7f7f8;
+      --tinta: #1d1d1f;
+      --texto-secundario: #6e6e73;
+      --acao: #007aff;
+      --borda: #d8d8dc;
+      --display: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --text: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+    }
+
+    :root[data-ui-theme="dark"] {
+      color-scheme: dark;
+      --mesa: #0f1012;
+      --papel: #181a1e;
+      --papel-secundario: #131519;
+      --tinta: #f4f4f5;
+      --texto-secundario: #a1a1a8;
+      --acao: #4c8dff;
+      --borda: #34363c;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-width: 320px;
+      background: var(--mesa);
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--tinta);
+      background: var(--mesa);
+      font-family: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .hub-shell {
+      width: min(980px, calc(100% - 48px));
+      margin: 0 auto;
+      padding: 48px 0 40px;
+    }
+
+    .hub-header {
+      position: relative;
+      max-width: 620px;
+      margin-bottom: 28px;
+    }
+
+    .theme-toggle {
+      position: absolute;
+      top: 0;
+      right: -330px;
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--borda);
+      border-radius: 10px;
+      color: var(--tinta);
+      background: var(--papel);
+      cursor: pointer;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--texto-secundario);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: clamp(30px, 4vw, 42px);
+      font-weight: 650;
+      letter-spacing: -0.035em;
+      line-height: 1.08;
+    }
+
+    .hub-header > p:last-child {
+      margin: 10px 0 0;
+      color: var(--texto-secundario);
+      font-size: 16px;
+      line-height: 1.45;
+    }
+
+    .template-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .template-card {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid var(--borda);
+      border-radius: 18px;
+      background: var(--papel);
+    }
+
+    .preview-stage {
+      display: grid;
+      min-height: 286px;
+      place-items: center;
+      border-bottom: 1px solid var(--borda);
+      background: var(--papel-secundario);
+      padding: 22px;
+    }
+
+    .preview-sheet {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(29, 29, 31, 0.12);
+      background: var(--papel);
+      box-shadow: 0 12px 28px rgba(29, 29, 31, 0.10), 0 2px 5px rgba(29, 29, 31, 0.08);
+    }
+
+    .preview-sheet--tweet {
+      width: 176px;
+      aspect-ratio: 4 / 5;
+      padding: 18px;
+    }
+
+    .tweet-heading {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 17px;
+    }
+
+    .tweet-avatar {
+      width: 24px;
+      height: 24px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: var(--tinta);
+    }
+
+    .tweet-identity {
+      display: grid;
+      flex: 1;
+      gap: 5px;
+    }
+
+    .preview-line {
+      display: block;
+      height: 5px;
+      border-radius: 99px;
+      background: #232326;
+    }
+
+    .preview-line--muted {
+      width: 54%;
+      height: 4px;
+      background: #a0a0a5;
+    }
+
+    .tweet-copy {
+      display: grid;
+      gap: 7px;
+    }
+
+    .tweet-copy .preview-line:nth-child(2) {
+      width: 91%;
+    }
+
+    .tweet-copy .preview-line:nth-child(3) {
+      width: 68%;
+    }
+
+    .tweet-rule {
+      position: absolute;
+      right: 18px;
+      bottom: 20px;
+      left: 18px;
+      height: 1px;
+      background: #dedee2;
+    }
+
+    .preview-sheet--stories {
+      display: flex;
+      width: 142px;
+      aspect-ratio: 4 / 5;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 18px 15px 16px;
+      color: var(--papel);
+      background: #1d1d1f;
+    }
+
+    .preview-sheet--stories-fundo {
+      display: flex;
+      width: 142px;
+      aspect-ratio: 4 / 5;
+      position: relative;
+      overflow: hidden;
+      align-items: center;
+      justify-content: center;
+      background:
+        linear-gradient(rgba(0,0,0,.42), rgba(0,0,0,.72)),
+        linear-gradient(150deg, #8a6a51 0 37%, #2d241f 37% 59%, #807d72 59% 100%);
+    }
+    .preview-sheet--stories-fundo::before {
+      content: '';
+      position: absolute;
+      width: 185px;
+      height: 185px;
+      border: 1px solid rgba(255,255,255,.46);
+      transform: rotate(38deg);
+      top: -88px;
+      right: -66px;
+    }
+    .fundo-card,
+    .fundo-card-small {
+      position: relative;
+      z-index: 1;
+      display: block;
+      width: 112px;
+      min-height: 28px;
+      background: #faf9f5;
+      box-shadow: 0 6px 20px rgba(0,0,0,.22);
+    }
+    .fundo-card { margin-top: 36px; }
+    .fundo-card-small { position: absolute; bottom: 26px; width: 88px; min-height: 13px; background: #070707; }
+
+    .preview-sheet--notes {
+      display: flex;
+      width: 176px;
+      aspect-ratio: 4 / 5;
+      flex-direction: column;
+      justify-content: center;
+      gap: 18px;
+      padding: 30px 20px;
+      background: #ffffff;
+    }
+
+    .notes-title-line,
+    .notes-body-line {
+      display: block;
+      height: 8px;
+      border-radius: 999px;
+      background: #222326;
+    }
+
+    .notes-title-line { height: 12px; }
+    .notes-title-line:nth-child(2) { width: 82%; }
+    .notes-copy { display: grid; gap: 8px; }
+    .notes-body-line { height: 6px; background: #5f6065; }
+    .notes-body-line:nth-child(2) { width: 89%; }
+    .notes-body-line:nth-child(3) { width: 66%; }
+
+    .story-kicker {
+      width: 34px;
+      height: 3px;
+      background: var(--papel);
+    }
+
+    .story-copy {
+      display: grid;
+      gap: 7px;
+      margin: auto 0;
+    }
+
+    .story-copy span {
+      display: block;
+      height: 11px;
+      background: var(--papel);
+    }
+
+    .story-copy span:nth-child(2) {
+      width: 83%;
+    }
+
+    .story-copy span:nth-child(3) {
+      width: 58%;
+    }
+
+    .story-footer {
+      width: 52%;
+      height: 3px;
+      background: #8e8e93;
+    }
+
+    .card-body {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 22px;
+      align-items: end;
+      padding: 20px;
+    }
+
+    .template-name {
+      margin: 0;
+      font-family: var(--display);
+      font-size: 20px;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+    }
+
+    .template-description {
+      margin: 5px 0 0;
+      color: var(--texto-secundario);
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .template-meta {
+      margin: 10px 0 0;
+      color: var(--texto-secundario);
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.01em;
+    }
+
+    .create-button {
+      min-height: 40px;
+      border: 0;
+      border-radius: 10px;
+      padding: 0 17px;
+      color: var(--papel);
+      background: var(--acao);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 140ms ease, opacity 140ms ease;
+    }
+
+    .create-button:hover {
+      background: #006ee6;
+    }
+
+    .create-button:focus-visible {
+      outline: 3px solid var(--acao);
+      outline-offset: 3px;
+    }
+
+    .create-button:disabled {
+      cursor: wait;
+      opacity: 0.58;
+    }
+
+    .hub-status {
+      min-height: 20px;
+      margin: 16px 2px 0;
+      color: var(--texto-secundario);
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .hub-status.is-error {
+      color: #b42318;
+    }
+
+    .integration-card {
+      margin-top: 22px;
+      border: 1px solid var(--borda);
+      border-radius: 16px;
+      background: var(--papel);
+      overflow: hidden;
+    }
+
+    .integration-card summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      cursor: pointer;
+      list-style: none;
+      padding: 16px 18px;
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .integration-card summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .integration-card summary::after {
+      content: '+';
+      color: var(--texto-secundario);
+      font-size: 20px;
+      font-weight: 400;
+    }
+
+    .integration-card[open] summary::after {
+      content: '−';
+    }
+
+    .integration-content {
+      border-top: 1px solid #e7e7ea;
+      padding: 18px;
+    }
+
+    .integration-content p {
+      margin: 0 0 14px;
+      color: var(--texto-secundario);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .integration-form {
+      display: grid;
+      gap: 12px;
+    }
+
+    .integration-form label {
+      display: grid;
+      gap: 6px;
+      color: var(--tinta);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .integration-form input {
+      min-width: 0;
+      border: 1px solid var(--borda);
+      border-radius: 9px;
+      padding: 10px;
+      color: var(--tinta);
+      background: var(--papel);
+      font: inherit;
+    }
+
+    .integration-form button {
+      justify-self: start;
+    }
+
+    .integration-result {
+      min-height: 20px;
+      margin: 2px 0 0;
+      color: var(--texto-secundario);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .integration-result.is-error {
+      color: #b42318;
+    }
+
+    @media (max-width: 720px) {
+      .hub-shell {
+        width: min(100% - 28px, 520px);
+        padding-top: 28px;
+      }
+
+      .hub-header {
+        margin-bottom: 22px;
+      }
+
+      .theme-toggle { right: 0; }
+
+      .template-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .preview-stage {
+        min-height: 242px;
+      }
+
+      .preview-sheet--tweet {
+        width: 154px;
+      }
+
+      .preview-sheet--stories {
+        width: 122px;
+      }
+
+      .preview-sheet--notes { width: 154px; }
+    }
+
+    @media (max-width: 420px) {
+      .card-body {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+
+      .create-button {
+        width: 100%;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .create-button {
+        transition: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="hub-shell">
+    <header class="hub-header">
+      <p class="eyebrow">Editor de Carrosséis</p>
+      <h1>O que vamos criar?</h1>
+      <p>Escolha um modelo para começar uma criação nova.</p>
+      <button id="hub-theme-toggle" class="theme-toggle" type="button" aria-label="Ativar interface escura" aria-pressed="false">☾</button>
+    </header>
+
+    <section id="template-grid" class="template-grid" aria-label="Templates disponíveis"></section>
+    <details id="integration-setup" class="integration-card" hidden>
+      <summary>Configurar integrações</summary>
+      <div class="integration-content">
+        <p><strong>Telegram</strong> — cole uma vez as credenciais do seu bot. Elas ficam apenas neste computador.</p>
+        <form id="telegram-form" class="integration-form">
+          <label>Token do bot
+            <input id="telegram-token" type="password" autocomplete="off" placeholder="123456:ABC..." required>
+          </label>
+          <label>Chat ID
+            <input id="telegram-chat-id" type="text" inputmode="numeric" autocomplete="off" placeholder="Ex.: -1001234567890" required>
+          </label>
+          <button id="save-telegram" class="create-button" type="submit">Salvar Telegram neste computador</button>
+          <p id="telegram-result" class="integration-result" role="status" aria-live="polite"></p>
+        </form>
+        <hr>
+        <p>Para ativar Telegram e Instagram neste computador, selecione o cofre criptografado recebido separadamente e informe a chave de recuperação. Nada é incluído no aplicativo.</p>
+        <form id="integration-form" class="integration-form">
+          <label>Cofre criptografado (.json)
+            <input id="credentials-vault" type="file" accept="application/json,.json" required>
+          </label>
+          <label>Chave de recuperação
+            <input id="recovery-key" type="password" autocomplete="off" required>
+          </label>
+          <button id="import-credentials" class="create-button" type="submit">Importar neste computador</button>
+          <p id="integration-result" class="integration-result" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+    </details>
+    <p id="hub-status" class="hub-status" role="status" aria-live="polite"></p>
+  </main>
+
+  <script>
+    const TEMPLATES = {{TEMPLATES_JSON}};
+
+    const grid = document.getElementById('template-grid');
+    const status = document.getElementById('hub-status');
+    const integrationSetup = document.getElementById('integration-setup');
+    const integrationForm = document.getElementById('integration-form');
+    const telegramForm = document.getElementById('telegram-form');
+    const telegramToken = document.getElementById('telegram-token');
+    const telegramChatId = document.getElementById('telegram-chat-id');
+    const telegramResult = document.getElementById('telegram-result');
+    const vaultInput = document.getElementById('credentials-vault');
+    const recoveryKeyInput = document.getElementById('recovery-key');
+    const importButton = document.getElementById('import-credentials');
+    const integrationResult = document.getElementById('integration-result');
+    const themeButton = document.getElementById('hub-theme-toggle');
+
+    function syncThemeButton() {
+      const dark = document.documentElement.dataset.uiTheme === 'dark';
+      themeButton.textContent = dark ? '☀' : '☾';
+      themeButton.setAttribute('aria-pressed', String(dark));
+      themeButton.setAttribute('aria-label', dark ? 'Ativar interface clara' : 'Ativar interface escura');
+    }
+
+    themeButton.addEventListener('click', () => {
+      const next = document.documentElement.dataset.uiTheme === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.uiTheme = next;
+      try { localStorage.setItem('carrossel-editor-ui-theme-v1', next); } catch (_) {}
+      syncThemeButton();
+    });
+    syncThemeButton();
+
+    function buildPreview(kind) {
+      const stage = document.createElement('div');
+      stage.className = 'preview-stage';
+      stage.setAttribute('aria-hidden', 'true');
+
+      const sheet = document.createElement('div');
+      sheet.className = `preview-sheet preview-sheet--${kind}`;
+
+      if (kind === 'tweet') {
+        sheet.innerHTML = `
+          <div class="tweet-heading">
+            <span class="tweet-avatar"></span>
+            <span class="tweet-identity">
+              <span class="preview-line"></span>
+              <span class="preview-line preview-line--muted"></span>
+            </span>
+          </div>
+          <span class="tweet-copy">
+            <span class="preview-line"></span>
+            <span class="preview-line"></span>
+            <span class="preview-line"></span>
+          </span>
+          <span class="tweet-rule"></span>`;
+      } else if (kind === 'stories') {
+        sheet.innerHTML = `
+          <span class="story-kicker"></span>
+          <span class="story-copy"><span></span><span></span><span></span></span>
+          <span class="story-footer"></span>`;
+      } else if (kind === 'stories-fundo') {
+        sheet.innerHTML = `
+          <span class="fundo-card"></span>
+          <span class="fundo-card-small"></span>`;
+      } else {
+        sheet.innerHTML = `
+          <span class="notes-title-line"></span>
+          <span class="notes-title-line"></span>
+          <span class="notes-copy">
+            <span class="notes-body-line"></span>
+            <span class="notes-body-line"></span>
+            <span class="notes-body-line"></span>
+          </span>`;
+      }
+
+      stage.appendChild(sheet);
+      return stage;
+    }
+
+    function renderTemplates() {
+      TEMPLATES.forEach((template) => {
+        const card = document.createElement('article');
+        card.className = 'template-card';
+        card.appendChild(buildPreview(template.preview_kind));
+
+        const body = document.createElement('div');
+        body.className = 'card-body';
+
+        const copy = document.createElement('div');
+        const title = document.createElement('h2');
+        title.className = 'template-name';
+        title.textContent = template.name;
+
+        const description = document.createElement('p');
+        description.className = 'template-description';
+        description.textContent = template.description;
+
+        const meta = document.createElement('p');
+        meta.className = 'template-meta';
+        meta.textContent = `${template.aspect_ratio} · ${template.initial_slides} slides`;
+
+        const button = document.createElement('button');
+        button.className = 'create-button';
+        button.type = 'button';
+        button.textContent = 'Começar';
+        button.setAttribute('aria-label', `Começar com ${template.name}`);
+        button.addEventListener('click', () => createCarousel(template.id, button));
+
+        copy.append(title, description, meta);
+        body.append(copy, button);
+        card.appendChild(body);
+        grid.appendChild(card);
+      });
+    }
+
+    function setStatus(message, isError = false) {
+      status.textContent = message;
+      status.classList.toggle('is-error', isError);
+    }
+
+    function setIntegrationResult(message, isError = false) {
+      integrationResult.textContent = message;
+      integrationResult.classList.toggle('is-error', isError);
+    }
+
+    function setTelegramResult(message, isError = false) {
+      telegramResult.textContent = message;
+      telegramResult.classList.toggle('is-error', isError);
+    }
+
+    async function loadIntegrationStatus() {
+      try {
+        const response = await fetch('/api/desktop-credentials/status');
+        if (!response.ok) return;
+        const payload = await response.json();
+        integrationSetup.hidden = false;
+        if (payload.configured) {
+          setIntegrationResult('Integrações configuradas neste computador. Você pode importar outro cofre se precisar substituir a configuração.');
+        }
+      } catch (_) {
+        // The normal browser/Codex workflow does not expose desktop setup.
+      }
+    }
+
+    integrationForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const vault = vaultInput.files && vaultInput.files[0];
+      if (!vault || !recoveryKeyInput.value) {
+        setIntegrationResult('Selecione o cofre e informe a chave de recuperação.', true);
+        return;
+      }
+      importButton.disabled = true;
+      setIntegrationResult('Validando o cofre neste computador…');
+      try {
+        const vaultJson = await vault.text();
+        const response = await fetch('/api/desktop-credentials/import', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Carrossel-CSRF': window.CARROSSEL_CSRF
+          },
+          body: JSON.stringify({vault_json: vaultJson, recovery_key: recoveryKeyInput.value})
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload.ok) throw new Error('Não foi possível validar o cofre ou a chave de recuperação.');
+        integrationForm.reset();
+        setIntegrationResult('Integrações configuradas com sucesso neste computador.');
+      } catch (_) {
+        setIntegrationResult('Não foi possível validar o cofre ou a chave de recuperação. A configuração atual não foi alterada.', true);
+      } finally {
+        recoveryKeyInput.value = '';
+        importButton.disabled = false;
+      }
+    });
+
+    telegramForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const button = document.getElementById('save-telegram');
+      button.disabled = true;
+      setTelegramResult('Salvando neste computador…');
+      try {
+        const response = await fetch('/api/telegram/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Carrossel-CSRF': window.CARROSSEL_CSRF },
+          body: JSON.stringify({ bot_token: telegramToken.value, chat_id: telegramChatId.value })
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload.ok) throw new Error(payload.error || 'Não foi possível salvar');
+        telegramForm.reset();
+        setTelegramResult('Telegram configurado neste computador.');
+      } catch (error) {
+        setTelegramResult(error.message || 'Não foi possível salvar a configuração.', true);
+      } finally {
+        telegramToken.value = '';
+        button.disabled = false;
+      }
+    });
+
+    async function createCarousel(templateId, button) {
+      button.disabled = true;
+      setStatus('Preparando seu editor…');
+      try {
+        const response = await fetch('/api/sessoes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Carrossel-CSRF': window.CARROSSEL_CSRF
+          },
+          body: JSON.stringify({template: templateId})
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.detail || 'Não foi possível criar o carrossel.');
+        window.location.assign(payload.url);
+      } catch (error) {
+        button.disabled = false;
+        setStatus(error.message, true);
+      }
+    }
+
+    renderTemplates();
+    loadIntegrationStatus();
+  </script>
+</body>
+</html>

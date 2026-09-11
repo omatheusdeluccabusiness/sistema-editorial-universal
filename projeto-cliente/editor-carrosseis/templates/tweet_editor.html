@@ -1,0 +1,3434 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<script>
+  (() => {
+    const key = 'carrossel-editor-ui-theme-v1';
+    let theme = 'light';
+    try { theme = localStorage.getItem(key) || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); }
+    catch (_) { theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
+    document.documentElement.dataset.uiTheme = theme;
+  })();
+</script>
+<title>Tweet Editor — {{TITLE}}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    background: #e8e8e8;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    padding: 24px 0 48px;
+  }
+  .header-info { text-align: center; padding: 16px; color: #444; font-size: 13px; margin-bottom: 8px; }
+  .header-info h1 { font-size: 18px; font-weight: 700; color: #0F1419; margin-bottom: 4px; }
+  .toolbar { max-width: 640px; margin: 0 auto 24px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .toolbar button {
+    border: 1px solid #c7c7c7; background: #fff; padding: 8px 14px;
+    border-radius: 6px; font-size: 12px; font-family: inherit; cursor: pointer;
+    color: #0F1419; font-weight: 500;
+  }
+  .toolbar button:hover { background: #f5f5f5; }
+  .toolbar button.primary { background: #0F1419; color: #fff; border-color: #0F1419; }
+  .toolbar button.primary:hover { background: #2A2D2F; }
+  .toolbar button.tg { background: #229ED9; color: #fff; border-color: #229ED9; }
+  .toolbar button.tg:hover { background: #1B86B5; }
+  .toolbar button.tg-config { background: #fff; color: #229ED9; border-color: #229ED9; }
+  .toolbar button.tg-config:hover { background: #F0F9FD; }
+  .toolbar button.danger { color: #c00; border-color: #e0c0c0; }
+  .wrap { max-width: 540px; margin: 0 auto; display: flex; flex-direction: column; gap: 36px; }
+  /* Garante que o card abraça exatamente a largura do tweet-render-wrap (540px),
+     sem deixar a faixa do background do card aparecer à direita do slide. */
+  .slide-card { width: 100%; }
+  .slide-card { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08); transition: box-shadow 0.15s ease, transform 0.15s ease; }
+  body.theme-dark { background: #15171a; }
+  body.theme-dark .header-info { color: #999; }
+  body.theme-dark .header-info h1 { color: #e7e9ea; }
+  body.theme-dark .slide-card { background: #1f2124; box-shadow: 0 4px 24px rgba(0,0,0,0.4); }
+  body.theme-dark .slide-label { background: #16181b; color: #888; border-bottom-color: #2a2d31; }
+  body.theme-dark .slide-controls { border-top-color: #2a2d31; }
+  body.theme-dark .slide-font-size-control label { color: #8b98a5; }
+  body.theme-dark .slide-text { background: #16181b; border-color: #383b40; color: #e7e9ea; }
+  body.theme-dark .slide-text:focus { border-color: #1D9BF0; background: #1a1d20; }
+  body.theme-dark .btn { background: #1f2124; border-color: #383b40; color: #e7e9ea; }
+  body.theme-dark .btn:hover { background: #2a2d31; }
+  body.theme-dark .btn.primary { background: #e7e9ea; color: #0F1419; border-color: #e7e9ea; }
+  body.theme-dark .btn.primary:hover { background: #c8cbcd; }
+  body.theme-dark .btn.danger { color: #ff6b6b; border-color: #5a3030; }
+  body.theme-dark .btn.danger:hover { background: #2a1a1a; }
+  body.theme-dark .toolbar button { background: #1f2124; border-color: #383b40; color: #e7e9ea; }
+  body.theme-dark .toolbar button:hover { background: #2a2d31; }
+  body.theme-dark .toolbar button.primary { background: #e7e9ea; color: #0F1419; border-color: #e7e9ea; }
+  body.theme-dark .toolbar button.primary:hover { background: #c8cbcd; }
+  body.theme-dark .toolbar button.danger { color: #ff6b6b; border-color: #5a3030; }
+  body.theme-dark .save-status { color: #888; }
+  body.theme-dark .save-status.saved { color: #4caf50; }
+  body.theme-dark .modal { background: #1f2124; color: #e7e9ea; }
+  body.theme-dark .modal h2 { color: #e7e9ea; }
+  body.theme-dark .modal label { color: #e7e9ea; }
+  body.theme-dark .modal input { background: #16181b; border-color: #383b40; color: #e7e9ea; }
+  body.theme-dark .modal .help { background: #16181b; color: #999; }
+  body.theme-dark .modal .help b { color: #e7e9ea; }
+  body.theme-dark .modal .help code { background: #2a2d31; color: #e7e9ea; }
+
+  .slide-card.drag-over { box-shadow: 0 0 0 3px #1D9BF0, 0 8px 32px rgba(29,155,240,0.25); transform: translateY(-2px); }
+  .slide-card.flash { animation: flashAnim 0.6s ease; }
+  @keyframes flashAnim {
+    0%, 100% { box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+    40% { box-shadow: 0 0 0 4px #0a8a3a, 0 8px 32px rgba(10,138,58,0.3); }
+  }
+  .slide-card.is-active { box-shadow: 0 0 0 2px #1D9BF0, 0 4px 24px rgba(0,0,0,0.08); }
+
+  .slide-label {
+    font-size: 11px; color: #777; font-family: monospace;
+    padding: 10px 14px; background: #f7f7f7; border-bottom: 1px solid #ececec;
+    letter-spacing: 0.4px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .slide-label .has-img-flag {
+    background: #1D9BF0; color: #fff; padding: 2px 8px; border-radius: 10px;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.3px;
+  }
+  /* Canvas só pra export PNG, escondido visualmente. */
+  canvas.export-canvas { display: none; }
+
+  /* ============ DOM-REAL TWEET CARD (visual primário) ============
+     A render do tweet acontece em HTML/CSS, escalada 50% pra caber na tela.
+     Dimensão nativa controlada por CSS vars --tweet-w/--tweet-h (atualizadas pelo seletor 4:5 / 3:4).
+     Fonte / size / line-height / padding / cores espelham o drawTweet do Canvas exatamente. */
+  :root {
+    --tweet-w: 1080px;
+    --tweet-h: 1350px; /* 4:5 default, alterado dinamicamente via setRatio() */
+    --tweet-aspect: 1080 / 1350;
+    --tweet-copy-line-height: 1.10;
+  }
+  .tweet-render-wrap {
+    width: calc(var(--tweet-w) / 2);
+    height: calc(var(--tweet-h) / 2);
+    overflow: hidden;
+    background: #fff;
+    display: block;
+  }
+  .tweet-render {
+    width: var(--tweet-w); height: var(--tweet-h);
+    transform: scale(0.5); transform-origin: top left;
+    background: #ffffff;
+    font-family: Arial, sans-serif;
+    color: #0F1419;
+    position: relative;
+    padding: 0;
+    box-sizing: border-box;
+    --marker-yellow: rgba(255, 228, 94, 0.82);
+    --marker-pink: rgba(255, 122, 200, 0.76);
+    --marker-green: rgba(128, 226, 126, 0.76);
+    --marker-blue: rgba(100, 216, 255, 0.76);
+  }
+  body.theme-dark .tweet-render {
+    background: #000000; color: #E7E9EA;
+    --marker-yellow: rgba(255, 214, 10, 0.94);
+    --marker-pink: rgba(255, 100, 190, 0.92);
+    --marker-green: rgba(80, 220, 120, 0.90);
+    --marker-blue: rgba(64, 200, 255, 0.90);
+  }
+  body.theme-dark .tweet-render-wrap { background: #000000; }
+
+  /* Header: avatar + nome + selo + handle. Posicionado em PAD_X=90, startY dinâmico. */
+  .tweet-render .header {
+    position: absolute;
+    left: 90px; right: 90px;
+    display: flex; align-items: flex-start;
+    pointer-events: none; /* não captura clique, body que captura */
+  }
+  .tweet-render .avatar-frame {
+    width: 120px; height: 120px; border-radius: 50%; overflow: hidden;
+    flex-shrink: 0; background: #1A1A1A;
+  }
+  .tweet-render .avatar {
+    width: 100%; height: 100%; display: block; object-fit: cover;
+    transform: translate(calc(var(--avatar-x, 0) * 100%), calc(var(--avatar-y, 0) * 100%)) scale(var(--avatar-scale, 1));
+    transform-origin: center; will-change: transform;
+  }
+  .tweet-render .name-block {
+    margin-left: 28px; padding-top: 22px;
+  }
+  .tweet-render .name-row { display: flex; align-items: center; gap: 12px; }
+  .tweet-render .name {
+    font-size: 40px; font-weight: 700; line-height: 1;
+    color: inherit; white-space: nowrap;
+  }
+  .tweet-render .verified {
+    width: 30px; height: 30px; flex-shrink: 0;
+  }
+  .tweet-render .handle {
+    font-size: 32px; font-weight: 400; line-height: 1;
+    margin-top: 8px;
+    color: #536471;
+  }
+  body.theme-dark .tweet-render .handle { color: #71767B; }
+
+  /* Body: contenteditable, 42px Arial Regular, line-height 1.10, max-width 900px (1080-PAD_X*2). */
+  .tweet-render .body {
+    position: absolute;
+    left: 90px; right: 90px;
+    font-size: 42px; line-height: var(--tweet-copy-line-height);
+    font-weight: 400;
+    letter-spacing: 0;
+    color: inherit;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    outline: none;
+    /* font-variant-ligatures: none pra evitar drift sutil entre browser e Canvas measureText */
+    font-variant-ligatures: none;
+    font-kerning: none;
+  }
+  .tweet-render .body:focus {
+    background: rgba(29, 155, 240, 0.04);
+    box-shadow: inset 0 0 0 2px rgba(29, 155, 240, 0.25);
+    border-radius: 6px;
+  }
+  .tweet-render .body strong { font-weight: 700; }
+  .tweet-render mark[data-highlight] {
+    color: inherit;
+    background: none;
+    /* O marca-texto não pode alterar métrica, largura ou quebra de linha da copy. */
+    padding: 0;
+    margin: 0;
+    border-radius: 0;
+    background-repeat: no-repeat;
+    background-size: 100% 1.04em;
+    background-position: 0 0.02em;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+  body.theme-dark .tweet-render mark[data-highlight] { color: #0F1419; }
+  .tweet-render mark[data-highlight="yellow"] { background-image: linear-gradient(var(--marker-yellow), var(--marker-yellow)); }
+  .tweet-render mark[data-highlight="pink"] { background-image: linear-gradient(var(--marker-pink), var(--marker-pink)); }
+  .tweet-render mark[data-highlight="green"] { background-image: linear-gradient(var(--marker-green), var(--marker-green)); }
+  .tweet-render mark[data-highlight="blue"] { background-image: linear-gradient(var(--marker-blue), var(--marker-blue)); }
+
+  .tweet-highlight-menu {
+    position: fixed;
+    z-index: 1500;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 42px;
+    padding: 6px;
+    border: 1px solid rgba(210, 210, 215, 0.92);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 10px 34px rgba(0, 0, 0, 0.18), 0 1px 3px rgba(0, 0, 0, 0.08);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(4px) scale(0.98);
+    transform-origin: 50% 100%;
+    transition: opacity 140ms ease, transform 140ms ease;
+  }
+  .tweet-highlight-menu.is-visible { opacity: 1; pointer-events: auto; transform: translateY(0) scale(1); }
+  .tweet-highlight-menu .marker-swatch {
+    width: 28px; height: 28px; padding: 0;
+    border: 1px solid rgba(29, 29, 31, 0.12);
+    border-radius: 8px 10px 7px 9px;
+    cursor: pointer;
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.48);
+  }
+  .tweet-highlight-menu .marker-swatch:hover { transform: translateY(-1px); }
+  .tweet-highlight-menu .marker-swatch[data-highlight-color="yellow"] { background: rgba(255, 228, 94, 0.92); }
+  .tweet-highlight-menu .marker-swatch[data-highlight-color="pink"] { background: rgba(255, 122, 200, 0.90); }
+  .tweet-highlight-menu .marker-swatch[data-highlight-color="green"] { background: rgba(128, 226, 126, 0.90); }
+  .tweet-highlight-menu .marker-swatch[data-highlight-color="blue"] { background: rgba(100, 216, 255, 0.90); }
+  body.theme-dark .tweet-highlight-menu .marker-swatch[data-highlight-color="yellow"] { background: rgba(255, 214, 10, 0.98); }
+  body.theme-dark .tweet-highlight-menu .marker-swatch[data-highlight-color="pink"] { background: rgba(255, 100, 190, 0.96); }
+  body.theme-dark .tweet-highlight-menu .marker-swatch[data-highlight-color="green"] { background: rgba(80, 220, 120, 0.96); }
+  body.theme-dark .tweet-highlight-menu .marker-swatch[data-highlight-color="blue"] { background: rgba(64, 200, 255, 0.96); }
+  .tweet-highlight-menu .marker-clear {
+    min-height: 28px; padding: 0 9px;
+    border: 0; border-left: 1px solid rgba(210, 210, 215, 0.9);
+    background: transparent; color: var(--ui-text-secondary);
+    font-family: var(--ui-font); font-size: 11px; font-weight: 500; cursor: pointer;
+  }
+  .tweet-highlight-menu button:focus-visible { outline: 3px solid rgba(0, 122, 255, 0.30); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { .tweet-highlight-menu { transition: none; } }
+
+  /* Foto opcional 16:9 abaixo do texto */
+  .tweet-render .photo {
+    position: absolute;
+    left: 60px; right: 60px;
+    border-radius: 24px;
+    background-size: cover; background-position: center;
+    background-color: #f0f0f0;
+  }
+  .tweet-render .photo.hidden { display: none; }
+
+  /* Controles abaixo do tweet (sem textarea agora) */
+  .slide-controls { padding: 12px 14px 14px; border-top: 1px solid #ececec; display: flex; flex-direction: column; gap: 10px; }
+  .slide-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .slide-font-size-control { display: grid; grid-template-columns: auto minmax(150px, 1fr) auto; align-items: center; gap: 10px; }
+  .slide-font-size-control label { font-size: 12px; font-weight: 600; color: #536471; white-space: nowrap; }
+  .slide-font-size-control input[type="range"] { width: 100%; accent-color: #1D9BF0; }
+  .slide-font-size-control output { min-width: 40px; color: #1D9BF0; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+  .btn {
+    border: 1px solid #d8d8d8; background: #fff; padding: 6px 12px; border-radius: 6px;
+    font-size: 12px; font-family: inherit; cursor: pointer; color: #0F1419;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn:hover { background: #f5f5f5; }
+  .btn.danger { color: #c00; border-color: #e8c8c8; }
+  .btn.danger:hover { background: #fff5f5; }
+  .btn.primary { background: #0F1419; color: #fff; border-color: #0F1419; }
+  .btn.primary:hover { background: #2A2D2F; }
+  .btn input[type=file] { display: none; }
+  .save-status { text-align: center; font-size: 11px; color: #888; font-family: monospace; margin-top: 4px; }
+  .save-status.saved { color: #0a8a3a; }
+  .send-status {
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+    background: #0F1419; color: #fff; padding: 10px 16px; border-radius: 8px;
+    font-size: 13px; box-shadow: 0 4px 20px rgba(0,0,0,0.25); z-index: 100;
+    display: none; max-width: 560px;
+  }
+  .send-status.visible { display: block; }
+  .send-status.success { background: #0a8a3a; }
+  .send-status.error { background: #c33; }
+
+  /* Modal Telegram */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200;
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-backdrop.visible { display: flex; }
+  .modal {
+    background: #fff; border-radius: 12px; max-width: 480px; width: 100%;
+    padding: 24px; box-shadow: 0 12px 48px rgba(0,0,0,0.2);
+  }
+  .modal h2 { font-size: 18px; margin-bottom: 4px; color: #0F1419; }
+  .modal .sub { font-size: 12px; color: #666; margin-bottom: 18px; line-height: 1.5; }
+  .modal label { display: block; font-size: 12px; font-weight: 600; color: #0F1419; margin: 12px 0 6px; }
+  .modal input {
+    width: 100%; padding: 10px 12px; border: 1px solid #d0d0d0; border-radius: 6px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px;
+  }
+  .modal input:focus { outline: none; border-color: #229ED9; }
+  .modal .help {
+    font-size: 11px; color: #777; line-height: 1.5; margin-top: 16px;
+    background: #f7f7f7; padding: 10px 12px; border-radius: 6px;
+  }
+  .modal .help b { color: #0F1419; }
+  .modal .help code { background: #fff; padding: 1px 5px; border-radius: 3px; font-size: 10.5px; }
+  .modal .actions { display: flex; gap: 8px; margin-top: 18px; justify-content: flex-end; }
+  .modal .privacy {
+    font-size: 11px; color: #c66; background: #fff5f5; padding: 8px 10px;
+    border-radius: 6px; margin-top: 12px; line-height: 1.5;
+  }
+  .image-composer-modal { max-width: 660px; }
+  .image-composer-modal .sub { margin-bottom: 14px; }
+  .image-composer-mode { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 14px 0; }
+  .image-composer-mode button {
+    border: 1px solid #d9dde2; border-radius: 9px; background: #fff; color: #0F1419;
+    padding: 11px 12px; text-align: left; font: inherit; cursor: pointer;
+  }
+  .image-composer-mode button strong { display: block; font-size: 13px; }
+  .image-composer-mode button small { display: block; margin-top: 3px; color: #687684; line-height: 1.35; }
+  .image-composer-mode button.is-active { border-color: #1D9BF0; background: #edf8ff; box-shadow: inset 0 0 0 1px #1D9BF0; }
+  .image-composer-slots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .image-composer-slot { min-height: 154px; border: 1px dashed #b8c0c8; border-radius: 10px; overflow: hidden; position: relative; background: #f7f9fa; }
+  .image-composer-slot img { display: none; width: 100%; height: 154px; object-fit: cover; }
+  .image-composer-slot.has-image img { display: block; }
+  .image-composer-slot label { height: 154px; margin: 0; display: flex; align-items: center; justify-content: center; color: #536471; cursor: pointer; font-weight: 600; }
+  .image-composer-slot.has-image label { position: absolute; right: 8px; bottom: 8px; height: auto; padding: 6px 9px; border-radius: 6px; background: rgba(15,20,25,.78); color: #fff; font-size: 11px; }
+  .image-composer-slot input { display: none; }
+  .image-composer-tools { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 10px; }
+  .image-composer-tools p { margin: 0; color: #687684; font-size: 11px; line-height: 1.35; }
+  .image-composer-tools .btn { padding: 7px 10px; }
+  body.theme-dark .image-composer-mode button { color: #e7e9ea; background: #16181b; border-color: #383b40; }
+  body.theme-dark .image-composer-mode button small, body.theme-dark .image-composer-tools p { color: #8b98a5; }
+  body.theme-dark .image-composer-mode button.is-active { background: #102a3b; border-color: #1D9BF0; }
+  body.theme-dark .image-composer-slot { background: #16181b; border-color: #4a5057; }
+  body.theme-dark .image-composer-slot label { color: #b7c0c8; }
+  .avatar-crop-modal { max-width: 416px; }
+  .avatar-crop-stage {
+    width: min(280px, 72vw); aspect-ratio: 1; margin: 20px auto 16px;
+    position: relative; overflow: hidden; border-radius: 50%; background: #14171a;
+    box-shadow: 0 0 0 1px rgba(15,20,25,.12), 0 16px 42px rgba(0,0,0,.20);
+    cursor: grab; touch-action: none; user-select: none;
+  }
+  .avatar-crop-stage:active { cursor: grabbing; }
+  .avatar-crop-stage::after {
+    content: ''; position: absolute; inset: 0; border-radius: inherit;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.88), inset 0 0 0 3px rgba(15,20,25,.24);
+    pointer-events: none;
+  }
+  .avatar-crop-image {
+    width: 100%; height: 100%; display: block; object-fit: cover;
+    transform: translate(calc(var(--avatar-x, 0) * 100%), calc(var(--avatar-y, 0) * 100%)) scale(var(--avatar-scale, 1));
+    transform-origin: center; pointer-events: none;
+  }
+  .avatar-crop-controls { display: grid; gap: 8px; }
+  .avatar-crop-controls label { display: flex; justify-content: space-between; margin: 0; color: #536471; }
+  .avatar-crop-controls output { color: #0F1419; font-variant-numeric: tabular-nums; }
+  .avatar-crop-controls input[type="range"] { width: 100%; padding: 0; accent-color: #1D9BF0; }
+  html[data-ui-theme="dark"] .avatar-crop-modal { background: #1f2124; }
+  html[data-ui-theme="dark"] .avatar-crop-controls label,
+  html[data-ui-theme="dark"] .avatar-crop-controls output { color: #e7e9ea; }
+
+  /* ===== NATIVE STUDIO: shell da página (não altera os slides) ===== */
+  :root {
+    --ui-canvas: #F2F2F4;
+    --ui-surface: #FFFFFF;
+    --ui-surface-muted: #F7F7F8;
+    --ui-text: #1D1D1F;
+    --ui-text-secondary: #6E6E73;
+    --ui-line: #D2D2D7;
+    --ui-blue: #007AFF;
+    --ui-blue-soft: rgba(0, 122, 255, 0.10);
+    --ui-danger: #FF3B30;
+    --ui-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", Inter, sans-serif;
+  }
+  .slide-card.content-auto-fitted .slide-label::after { content: 'texto ajustado'; color: #a06b00; }
+  .slide-card.content-overflow .slide-label::after { content: 'reduza o conteúdo'; color: #c33; }
+  html[data-ui-theme="dark"] {
+    color-scheme: dark;
+    --ui-canvas: #0f1115; --ui-surface: #171a20; --ui-surface-muted: #20242c;
+    --ui-text: #f4f6f8; --ui-text-secondary: #9aa3b2; --ui-line: #303744;
+    --ui-blue: #5b8cff; --ui-blue-soft: rgba(91,140,255,.16); --ui-danger: #ff6b61;
+  }
+  html[data-ui-theme="dark"] .app-header { background: rgba(23,26,32,.98); border-color: rgba(255,255,255,.10); }
+  html[data-ui-theme="dark"] .production-rail,
+  html[data-ui-theme="dark"] .inspector-panel,
+  html[data-ui-theme="dark"] .slide-card,
+  html[data-ui-theme="dark"] .slide-controls { background: var(--ui-surface); border-color: rgba(255,255,255,.10); }
+  html[data-ui-theme="dark"] .shell-button,
+  html[data-ui-theme="dark"] .btn,
+  html[data-ui-theme="dark"] .profile-input,
+  html[data-ui-theme="dark"] .profile-handle-field,
+  html[data-ui-theme="dark"] .caption-field,
+  html[data-ui-theme="dark"] .segmented { border-color: rgba(255,255,255,.14); }
+  html[data-ui-theme="dark"] .shell-button:hover,
+  html[data-ui-theme="dark"] .btn:hover { background: #252a33; border-color: #3a424f; }
+  html[data-ui-theme="dark"] .segmented { background: #0f1217; }
+  html[data-ui-theme="dark"] .segmented button.active { background: var(--ui-surface-muted); color: var(--ui-text); }
+  html[data-ui-theme="dark"] .rail-actions,
+  html[data-ui-theme="dark"] .inspector-section { border-color: rgba(255,255,255,.10); }
+  .ui-theme-toggle { width: 34px; padding: 0; font-size: 17px; line-height: 1; }
+  html, body {
+    background: var(--ui-canvas);
+    color: var(--ui-text);
+    font-family: var(--ui-font);
+    padding: 0;
+    min-height: 100%;
+    -webkit-font-smoothing: antialiased;
+  }
+  body.theme-dark { background: var(--ui-canvas); }
+  button, textarea, input { font: inherit; }
+  .app-header {
+    position: sticky; top: 0; z-index: 600;
+    min-height: 64px; padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 24px;
+    background: rgba(255, 255, 255, 0.98);
+    border-bottom: 1px solid rgba(210, 210, 215, 0.72);
+  }
+  .app-identity { min-width: 0; }
+  .app-kicker, .inspector-title, .rail-heading, .stage-kicker {
+    font-family: var(--ui-font); font-size: 13px; line-height: 1.2;
+    letter-spacing: -0.01em; text-transform: none; color: var(--ui-text-secondary);
+  }
+  .app-kicker { display: none; }
+  .app-header h1 {
+    margin: 0; font-family: var(--ui-font);
+    font-size: 18px; font-weight: 600; line-height: 1.2; letter-spacing: -0.025em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .doc-meta { margin-top: 2px; font-size: 11px; color: var(--ui-text-secondary); font-variant-numeric: tabular-nums; }
+  .app-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-shrink: 0; }
+  .shell-button {
+    min-height: 34px; padding: 0 14px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    border: 1px solid rgba(210, 210, 215, 0.9); border-radius: 9px;
+    background: var(--ui-surface); color: var(--ui-text);
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+  }
+  .shell-button[hidden] { display: none; }
+  .shell-button:hover { background: #ECECEF; border-color: #C7C7CC; }
+  .shell-button.publish, .shell-button.action { background: var(--ui-blue); border-color: var(--ui-blue); color: #fff; }
+  .shell-button.publish:hover, .shell-button.action:hover { background: #006EE6; border-color: #006EE6; }
+  .shell-button.danger { color: var(--ui-danger); border-color: rgba(255, 59, 48, 0.26); }
+  .shell-button.danger:hover { background: rgba(255, 59, 48, 0.08); }
+  .shell-button.restart-carousel { color: var(--ui-danger); border-color: rgba(255, 59, 48, 0.34); }
+  .shell-button.restart-carousel:hover { background: rgba(255, 59, 48, 0.08); border-color: rgba(255, 59, 48, 0.52); }
+  .shell-button.quiet { background: transparent; }
+  .save-status {
+    margin: 0 8px 0 0; color: var(--ui-text-secondary);
+    font-size: 11px; white-space: nowrap;
+  }
+  .save-status.saved { color: #248A3D; }
+  .production-layout {
+    width: 100%; min-height: calc(100vh - 64px); margin: 0;
+    display: grid; grid-template-columns: 220px minmax(540px, 1fr) 300px;
+    gap: 0; align-items: stretch;
+  }
+  .production-rail, .inspector-panel {
+    position: sticky; top: 64px; height: calc(100vh - 64px); overflow: auto;
+    border: 0; border-radius: 0; background: var(--ui-surface); box-shadow: none;
+  }
+  .production-rail { padding: 18px 12px 14px; border-right: 1px solid rgba(210, 210, 215, 0.72); }
+  .inspector-panel { padding: 4px 18px 18px; border-left: 1px solid rgba(210, 210, 215, 0.72); }
+  .rail-header { display: flex; align-items: center; justify-content: space-between; padding: 0 8px 12px; }
+  .rail-heading { color: var(--ui-text); font-weight: 600; }
+  .rail-count { font-size: 11px; color: var(--ui-text-secondary); font-variant-numeric: tabular-nums; }
+  #slide-rail-list { display: flex; flex-direction: column; gap: 2px; }
+  .rail-item {
+    width: 100%; min-height: 40px; padding: 6px 10px 6px 9px;
+    display: grid; grid-template-columns: 28px 1fr; align-items: center; gap: 7px;
+    border: 0; border-left: 3px solid transparent; border-radius: 8px;
+    background: transparent; color: var(--ui-text); text-align: left; cursor: pointer;
+    transition: background-color 150ms ease, color 150ms ease;
+  }
+  .rail-item:hover { background: var(--ui-surface-muted); }
+  .rail-item[draggable="true"] { cursor: grab; }
+  .rail-item[draggable="true"]:active { cursor: grabbing; }
+  .rail-item.is-dragging { opacity: .42; }
+  .rail-item.drop-before { box-shadow: inset 0 2px 0 var(--ui-blue); }
+  .rail-item.drop-after { box-shadow: inset 0 -2px 0 var(--ui-blue); }
+  .rail-item.is-active { background: var(--ui-blue-soft); color: var(--ui-blue); border-left: 3px solid var(--ui-blue); }
+  .rail-index { font-size: 11px; color: #8E8E93; font-variant-numeric: tabular-nums; }
+  .rail-item.is-active .rail-index { color: var(--ui-blue); }
+  .rail-role { font-size: 13px; font-weight: 500; letter-spacing: -0.01em; }
+  .rail-actions { display: grid; gap: 7px; padding-top: 14px; margin-top: 14px; border-top: 1px solid rgba(210, 210, 215, 0.72); }
+  .rail-actions .shell-button { width: 100%; min-height: 34px; padding: 0 10px; font-size: 12px; }
+  .editor-stage { min-width: 0; padding: 24px clamp(24px, 4vw, 64px) 72px; background: var(--ui-canvas); }
+  .stage-intro { max-width: 680px; margin: 0 auto 16px; display: flex; align-items: end; justify-content: space-between; gap: 20px; }
+  .stage-kicker { color: var(--ui-text); font-weight: 600; }
+  .stage-intro p { margin-top: 4px; color: var(--ui-text-secondary); font-size: 12px; }
+  .stage-shortcut { font-size: 11px; color: var(--ui-text-secondary); white-space: nowrap; }
+  .wrap { max-width: 540px; margin: 0 auto; }
+  .slide-card { border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 16px 40px rgba(0,0,0,0.10); }
+  .slide-card.is-active { box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 16px 40px rgba(0,0,0,0.10); }
+  .slide-label { background: var(--ui-surface-muted); color: var(--ui-text-secondary); font-family: var(--ui-font); letter-spacing: 0; }
+  .slide-controls { background: var(--ui-surface); border-top-color: rgba(210, 210, 215, 0.72); }
+  .btn { min-height: 32px; border-color: rgba(210,210,215,.9); border-radius: 8px; font-family: var(--ui-font); font-size: 12px; transition: background-color 150ms ease; }
+  .btn.primary { background: #1D1D1F; border-color: #1D1D1F; }
+  .inspector-section { padding: 18px 0; border-bottom: 1px solid rgba(210, 210, 215, 0.72); }
+  .inspector-section:last-child { border-bottom: 0; }
+  .inspector-title { display: block; margin-bottom: 10px; color: var(--ui-text); font-weight: 600; }
+  .segmented { display: grid; grid-template-columns: 1fr 1fr; padding: 2px; border-radius: 9px; background: #E9E9EC; }
+  .segmented button { min-height: 30px; border: 0; border-radius: 7px; background: transparent; color: var(--ui-text-secondary); font-size: 12px; font-weight: 500; cursor: pointer; }
+  .segmented button.active { background: var(--ui-surface); color: var(--ui-text); box-shadow: 0 1px 3px rgba(0,0,0,0.13); }
+  .inspector-stack { display: grid; gap: 8px; }
+  .inspector-stack .shell-button { width: 100%; }
+  .profile-editor { display: grid; gap: 12px; }
+  .profile-switch { grid-template-columns: 1fr 1fr; }
+  .profile-avatar-row { display: flex; align-items: center; gap: 12px; }
+  .profile-avatar-preview-frame {
+    width: 48px; height: 48px; border-radius: 50%; overflow: hidden; flex: 0 0 auto;
+    background: var(--ui-surface-muted); border: 1px solid rgba(210,210,215,.9);
+  }
+  .profile-avatar-preview {
+    width: 100%; height: 100%; display: block; object-fit: cover;
+    transform: translate(calc(var(--avatar-x, 0) * 100%), calc(var(--avatar-y, 0) * 100%)) scale(var(--avatar-scale, 1));
+    transform-origin: center;
+  }
+  .profile-photo-button { min-height: 32px; padding: 0 12px; }
+  .profile-crop-button { min-height: 32px; padding: 0 10px; }
+  .profile-avatar-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  .profile-field { display: grid; gap: 6px; }
+  .profile-field label { color: var(--ui-text-secondary); font-size: 12px; font-weight: 500; }
+  .profile-input, .profile-handle-field {
+    width: 100%; min-height: 36px; border: 1px solid rgba(210,210,215,.9);
+    border-radius: 9px; background: var(--ui-surface-muted); color: var(--ui-text);
+  }
+  .profile-input { padding: 0 10px; outline: none; }
+  .profile-handle-field { display: flex; align-items: center; padding-left: 10px; }
+  .profile-handle-prefix { color: var(--ui-text-secondary); font-size: 13px; }
+  .profile-handle-field .profile-input { min-height: 34px; padding-left: 1px; border: 0; background: transparent; }
+  .profile-input:focus { background: var(--ui-surface); }
+  .profile-handle-field:focus-within, .profile-input:focus {
+    border-color: var(--ui-blue); box-shadow: 0 0 0 3px rgba(0,122,255,.13);
+  }
+  .profile-help { color: var(--ui-text-secondary); font-size: 11px; line-height: 1.35; }
+  .global-font-size-control { display: grid; gap: 7px; margin-top: 14px; }
+  .global-font-size-control label { display: flex; align-items: baseline; justify-content: space-between; color: var(--ui-text); font-size: 12px; font-weight: 600; }
+  .global-font-size-control output { color: var(--ui-blue); font-variant-numeric: tabular-nums; }
+  .global-font-size-control input[type="range"] { width: 100%; accent-color: var(--ui-blue); }
+  .global-font-size-control p { color: var(--ui-text-secondary); font-size: 11px; line-height: 1.35; }
+  .caption-field {
+    width: 100%; min-height: 150px; resize: vertical;
+    border: 1px solid rgba(210,210,215,.9); border-radius: 10px; padding: 10px 11px;
+    background: var(--ui-surface-muted); color: var(--ui-text); font-size: 13px; line-height: 1.45; outline: none;
+  }
+  .caption-field:focus { border-color: var(--ui-blue); background: var(--ui-surface); box-shadow: 0 0 0 3px rgba(0,122,255,0.13); }
+  .maintenance summary { cursor: pointer; color: var(--ui-text-secondary); font-size: 12px; font-weight: 500; }
+  .maintenance[open] summary { margin-bottom: 10px; }
+  .send-status { z-index: 1200; }
+  :where(button, textarea, input, summary):focus-visible {
+    outline: 3px solid rgba(0,122,255,0.28); outline-offset: 2px;
+  }
+  .profile-handle-field .profile-input:focus,
+  .profile-handle-field .profile-input:focus-visible {
+    background: transparent; box-shadow: none; outline: none;
+  }
+  @media (max-width: 1100px) {
+    .production-layout { grid-template-columns: minmax(0, 1fr) 290px; }
+    .production-rail { position: static; grid-column: 1 / -1; height: auto; border-right: 0; border-bottom: 1px solid rgba(210,210,215,.72); }
+    #slide-rail-list { flex-direction: row; overflow-x: auto; padding-bottom: 2px; }
+    .rail-item { min-width: 112px; }
+    .rail-actions { grid-template-columns: 1fr 1fr; }
+    .inspector-panel { top: 64px; }
+  }
+  @media (max-width: 760px) {
+    .app-header { position: relative; padding: 12px 16px; align-items: flex-start; flex-direction: column; gap: 10px; }
+    .app-actions { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
+    .app-actions .save-status { grid-column: 1 / -1; }
+    .production-layout { width: 100%; grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .production-rail, .inspector-panel { position: static; height: auto; max-height: none; }
+    .production-rail { order: 1; }
+    .editor-stage { order: 2; }
+    .inspector-panel { order: 3; }
+    .editor-stage { padding: 20px 12px 48px; }
+    .inspector-panel { border-left: 0; border-top: 1px solid rgba(210,210,215,.72); }
+    .stage-shortcut { display: none; }
+    .wrap { width: 100%; }
+    .slide-card { max-width: 100%; }
+    .tweet-render-wrap {
+      width: min(540px, calc(100vw - 24px));
+      height: auto;
+      aspect-ratio: var(--tweet-aspect);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="app-identity">
+      <h1>Modelo Tweet</h1>
+    </div>
+    <div class="app-actions">
+      <span class="save-status" id="save-status">Aguardando edição</span>
+      <button id="btn-back-hub" class="shell-button quiet" type="button" hidden>Voltar aos modelos</button>
+      <button id="btn-restart-carousel" class="shell-button restart-carousel" type="button">Reiniciar carrossel</button>
+      <button id="btn-ui-theme" class="shell-button ui-theme-toggle" type="button" aria-label="Ativar interface escura" title="Ativar interface escura" aria-pressed="false"><span id="ui-theme-icon" aria-hidden="true">&#9790;</span></button>
+      <button id="btn-download-all" class="shell-button" title="Baixa todos os slides em um arquivo ZIP">Exportar PNGs (.zip)</button>
+      <button id="btn-publish-ig" class="shell-button publish">Publicar</button>
+    </div>
+  </header>
+
+  <div class="production-layout">
+    <aside class="production-rail" aria-label="Navegação dos slides">
+      <div class="rail-header">
+        <span class="rail-heading">Slides</span>
+        <span class="rail-count">{{N_SLIDES}} telas</span>
+      </div>
+      <nav id="slide-rail-list" aria-label="Navegação dos slides"></nav>
+      <div class="rail-actions">
+        <button id="btn-download-current" class="shell-button quiet" title="Baixa somente o slide selecionado em PNG">Baixar slide atual</button>
+        <button id="btn-add-slide" class="shell-button">+ Adicionar slide</button>
+        <button id="btn-delete-slide" class="shell-button danger">Excluir atual</button>
+      </div>
+    </aside>
+
+    <main class="editor-stage">
+      <div class="stage-intro">
+        <div>
+          <span class="stage-kicker">Pré-visualização</span>
+          <p>Clique no texto para editar. Arraste ou cole imagens no slide ativo.</p>
+        </div>
+        <span class="stage-shortcut">⌘V · imagem</span>
+      </div>
+      <div class="wrap" id="wrap"></div>
+    </main>
+
+    <aside class="inspector-panel" aria-label="Propriedades do carrossel">
+      <section class="inspector-section">
+        <span class="inspector-title">Perfil</span>
+        <div class="profile-editor">
+          <div class="segmented profile-switch" aria-label="Perfil ativo">
+            <button id="btn-profile-1" type="button" data-profile-slot="profile-1">Perfil 1</button>
+            <button id="btn-profile-2" type="button" data-profile-slot="profile-2">Perfil 2</button>
+          </div>
+          <div class="profile-avatar-row">
+            <div class="profile-avatar-preview-frame"><img id="profile-avatar-preview" class="profile-avatar-preview" alt="Foto de perfil atual"></div>
+            <label class="shell-button profile-photo-button" for="profile-avatar-input">Trocar foto</label>
+            <button id="btn-profile-crop" class="shell-button quiet profile-crop-button" type="button">Ajustar</button>
+            <input id="profile-avatar-input" class="profile-avatar-input" type="file" accept="image/*">
+          </div>
+          <div class="profile-field">
+            <label for="profile-name">Nome</label>
+            <input id="profile-name" class="profile-input" type="text" autocomplete="name">
+          </div>
+          <div class="profile-field">
+            <label for="profile-handle">Arroba</label>
+            <div class="profile-handle-field">
+              <span class="profile-handle-prefix" aria-hidden="true">@</span>
+              <input id="profile-handle" class="profile-input" type="text" autocomplete="off" spellcheck="false">
+            </div>
+          </div>
+          <p class="profile-help">Cada perfil guarda sua própria foto, nome e arroba. A troca vale para todos os slides.</p>
+        </div>
+      </section>
+      <section class="inspector-section">
+        <span class="inspector-title">Documento</span>
+        <div class="segmented">
+          <button id="btn-ratio-4-5" data-ratio="4:5" title="Meta Ads exige 4:5">4:5</button>
+          <button id="btn-ratio-3-4" data-ratio="3:4" title="Formato tweet clássico">3:4</button>
+        </div>
+        <div class="global-font-size-control">
+          <label for="tweet-global-font-size">Tamanho do texto <output id="tweet-global-font-size-value" for="tweet-global-font-size">42 px</output></label>
+          <input id="tweet-global-font-size" type="range" min="28" max="72" step="1" value="42" aria-label="Tamanho do texto em todos os slides">
+          <p>Aplica o mesmo tamanho a todos os slides deste carrossel.</p>
+        </div>
+        <div class="inspector-stack" style="margin-top:8px;">
+          <button id="btn-theme" class="shell-button quiet">Fundo escuro</button>
+        </div>
+      </section>
+      <section class="inspector-section">
+        <span class="inspector-title">Entrega</span>
+        <div class="inspector-stack">
+          <button id="btn-send-tg" class="shell-button action">Enviar ao Telegram</button>
+          <button id="btn-config-tg" class="shell-button quiet">Configurar Telegram</button>
+        </div>
+      </section>
+      <section class="inspector-section">
+        <details class="maintenance">
+          <summary>Manutenção</summary>
+          <button id="btn-reset" class="shell-button danger" style="width:100%;">Restaurar texto original</button>
+        </details>
+      </section>
+    </aside>
+  </div>
+
+  <div id="send-status" class="send-status"></div>
+
+  <div id="tweet-highlight-menu" class="tweet-highlight-menu" role="toolbar"
+       aria-label="Cores do marca-texto" aria-hidden="true">
+    <button type="button" class="marker-swatch" data-highlight-color="yellow" aria-label="Marca-texto amarelo"></button>
+    <button type="button" class="marker-swatch" data-highlight-color="pink" aria-label="Marca-texto rosa"></button>
+    <button type="button" class="marker-swatch" data-highlight-color="green" aria-label="Marca-texto verde"></button>
+    <button type="button" class="marker-swatch" data-highlight-color="blue" aria-label="Marca-texto azul"></button>
+    <button type="button" class="marker-clear" data-highlight-action="clear" aria-label="Remover realce">Remover</button>
+  </div>
+
+  <div class="modal-backdrop" id="avatar-crop-modal" role="dialog" aria-modal="true" aria-labelledby="avatar-crop-title" aria-hidden="true">
+    <div class="modal avatar-crop-modal" tabindex="-1">
+      <h2 id="avatar-crop-title">Ajustar foto de perfil</h2>
+      <p class="sub">Arraste a foto para reposicionar. Use o zoom para acertar o enquadramento dentro da bolinha.</p>
+      <div id="avatar-crop-stage" class="avatar-crop-stage" aria-label="Prévia do recorte da foto de perfil">
+        <img id="avatar-crop-image" class="avatar-crop-image" alt="Prévia do enquadramento">
+      </div>
+      <div class="avatar-crop-controls">
+        <label for="avatar-crop-zoom">Zoom <output id="avatar-crop-zoom-value" for="avatar-crop-zoom">100%</output></label>
+        <input id="avatar-crop-zoom" type="range" min="1" max="3" step="0.01" value="1" aria-label="Zoom da foto de perfil">
+      </div>
+      <div class="actions">
+        <button class="btn" id="avatar-crop-cancel" type="button">Cancelar</button>
+        <button class="btn primary" id="avatar-crop-apply" type="button">Usar foto</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="tweet-image-composer-modal" role="dialog" aria-modal="true" aria-labelledby="tweet-image-composer-title" aria-hidden="true">
+    <div class="modal image-composer-modal" tabindex="-1">
+      <h2 id="tweet-image-composer-title">Adicionar imagem</h2>
+      <p class="sub">Use uma foto única ou monte duas fotos no mesmo quadro 16:9. A montagem é criada localmente e já entra pronta no slide.</p>
+      <div class="image-composer-mode" role="group" aria-label="Formato da imagem">
+        <button type="button" data-image-composer-mode="single" class="is-active"><strong>Imagem única</strong><small>Usa uma foto como hoje.</small></button>
+        <button type="button" data-image-composer-mode="split"><strong>Duas fotos lado a lado</strong><small>Duas metades verticais preenchendo o quadro.</small></button>
+      </div>
+      <div class="image-composer-slots">
+        <div class="image-composer-slot" id="tweet-image-slot-left" tabindex="0"><img id="tweet-image-preview-left" alt="Primeira foto da montagem"><label for="tweet-image-file-left">Adicionar primeira foto ou cole aqui<input id="tweet-image-file-left" type="file" accept="image/*"></label></div>
+        <div class="image-composer-slot" id="tweet-image-slot-right" tabindex="0"><img id="tweet-image-preview-right" alt="Segunda foto da montagem"><label for="tweet-image-file-right">Adicionar segunda foto ou cole aqui<input id="tweet-image-file-right" type="file" accept="image/*"></label></div>
+      </div>
+      <div class="image-composer-tools">
+        <p id="tweet-image-composer-help">Escolha a foto que entrará no slide.</p>
+        <button class="btn" id="tweet-image-composer-swap" type="button" hidden>Trocar lados</button>
+      </div>
+      <div class="actions">
+        <button class="btn" id="tweet-image-composer-cancel" type="button">Cancelar</button>
+        <button class="btn primary" id="tweet-image-composer-apply" type="button" disabled>Usar imagem</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Telegram Config -->
+  <div class="modal-backdrop" id="tg-modal" role="dialog" aria-modal="true" aria-labelledby="tweet-tg-title" aria-hidden="true">
+    <div class="modal" tabindex="-1">
+      <h2 id="tweet-tg-title">Configurar Telegram</h2>
+      <div class="sub">No repositório clonado, preencha <code>CREDENCIAIS_TELEGRAM.txt</code> no Bloco de Notas. Ele fica somente neste computador e nunca é entregue ao navegador.</div>
+      <p id="tg-config-status" class="help">Verificando configuração local…</p>
+      <div class="help">
+        Após salvar o TXT, use este botão para testar a configuração.
+      </div>
+      <div class="actions">
+        <button class="btn" id="tg-test">Testar configuração</button>
+        <button class="btn primary" id="tg-cancel">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ─── Constants ─────────────────────────────────────────
+    // W é fixo 1080. H varia conforme ratio escolhido (4:5 = 1350 ou 3:4 = 1440).
+    // Meta Ads exige 4:5 pra carrossel pago, por isso é o default.
+    const W = 1080;
+    const RATIO_HEIGHTS = { '4:5': 1350, '3:4': 1440 };
+    let currentRatio = (function() {
+      try { return localStorage.getItem('carrossel-universal-tweet-ratio') || '4:5'; } catch (e) { return '4:5'; }
+    })();
+    let H = RATIO_HEIGHTS[currentRatio] || 1350;
+    const IMG_RATIO = 16 / 9;
+    const STORAGE_KEY = '{{DOC_KEY}}';
+    const PROFILE_STORAGE_KEY = 'tweet-editor-profile-v1';
+    const PROFILE_COLLECTION_STORAGE_KEY = 'tweet-editor-profiles-v1';
+    const TWEET_FONT_SIZE_STORAGE_KEY = 'carrossel-universal-tweet-global-font-size-v1';
+    const TWEET_FONT_SIZE_MIN = 28;
+    const TWEET_FONT_SIZE_MAX = 72;
+    const TWEET_COPY_LINE_HEIGHT = 1.10;
+    let currentTweetFontSize = (function() {
+      try {
+        const raw = localStorage.getItem(TWEET_FONT_SIZE_STORAGE_KEY);
+        if (raw === null) return 42;
+        const saved = Number(raw);
+        return Number.isFinite(saved) ? Math.min(TWEET_FONT_SIZE_MAX, Math.max(TWEET_FONT_SIZE_MIN, saved)) : 42;
+      } catch (e) { return 42; }
+    })();
+    const ORIGINAL_SLIDES = {{SLIDES_JSON}};
+
+    // ─── State ─────────────────────────────────────────────
+    // ─── Storage abstraction (fallback em memória) ────────
+    // localStorage é bloqueado em data: URLs (Launch preview do Claude Code).
+    // Quando isso acontece, caímos pra memória só desta sessão.
+    const _memStorage = {};
+    let _storageAvailable = null;
+    // Um bloqueio do navegador (ou uma cota cheia) não pode transformar cada
+    // tecla pressionada em um toast vermelho. O estado em memória continua
+    // sendo usado durante esta sessão e o indicador discreto no cabeçalho
+    // informa a situação sem interromper a edição.
+    function isStorageAvailable() {
+      if (_storageAvailable !== null) return _storageAvailable;
+      try {
+        const testKey = '__test__' + Math.random();
+        localStorage.setItem(testKey, '1');
+        localStorage.removeItem(testKey);
+        _storageAvailable = true;
+      } catch { _storageAvailable = false; }
+      return _storageAvailable;
+    }
+    function safeStorageGet(key) {
+      if (Object.prototype.hasOwnProperty.call(_memStorage, key)) return _memStorage[key];
+      try { return localStorage.getItem(key); }
+      catch { return _memStorage[key] || null; }
+    }
+    function safeStorageSet(key, val) {
+      try {
+        localStorage.setItem(key, val);
+        delete _memStorage[key];
+        return true;
+      } catch {
+        _memStorage[key] = val;
+        return false;
+      }
+    }
+
+    // Imagens importadas já estão incorporadas no HTML em ORIGINAL_SLIDES.
+    // Persistir novamente cada data URL a cada tecla estoura rapidamente a
+    // cota do localStorage. Guardamos apenas um índice para essas imagens e
+    // restauramos o conteúdo original ao recarregar a página.
+    const ORIGINAL_IMAGE_REF_KEY = '__originalImageIndex';
+    const STORED_IMAGE_REF_KEY = '__storedImageKey';
+    const TWEET_IMAGE_DB_NAME = 'carrossel-editor-tweet-images-v1';
+    const TWEET_IMAGE_DB_STORE = 'images';
+    const originalImageIndexByDataURL = new Map();
+    let tweetImageDatabasePromise = null;
+    const tweetImageStorageInFlight = new WeakMap();
+    const tweetStoredImageKeys = new Map();
+    ORIGINAL_SLIDES.forEach((slide, index) => {
+      if (slide && slide.imageDataURL) originalImageIndexByDataURL.set(slide.imageDataURL, index);
+    });
+
+    function openTweetImageDatabase() {
+      if (tweetImageDatabasePromise) return tweetImageDatabasePromise;
+      tweetImageDatabasePromise = new Promise((resolve) => {
+        if (!window.indexedDB) { resolve(null); return; }
+        const request = indexedDB.open(TWEET_IMAGE_DB_NAME, 1);
+        request.onupgradeneeded = () => {
+          if (!request.result.objectStoreNames.contains(TWEET_IMAGE_DB_STORE)) {
+            request.result.createObjectStore(TWEET_IMAGE_DB_STORE);
+          }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => resolve(null);
+      });
+      return tweetImageDatabasePromise;
+    }
+
+    async function writeTweetImage(key, dataURL) {
+      const db = await openTweetImageDatabase();
+      if (!db) return false;
+      return new Promise((resolve) => {
+        const transaction = db.transaction(TWEET_IMAGE_DB_STORE, 'readwrite');
+        transaction.objectStore(TWEET_IMAGE_DB_STORE).put(dataURL, key);
+        transaction.oncomplete = () => resolve(true);
+        transaction.onerror = transaction.onabort = () => resolve(false);
+      });
+    }
+
+    async function readTweetImage(key) {
+      const db = await openTweetImageDatabase();
+      if (!db) return null;
+      return new Promise((resolve) => {
+        const request = db.transaction(TWEET_IMAGE_DB_STORE, 'readonly').objectStore(TWEET_IMAGE_DB_STORE).get(key);
+        request.onsuccess = () => resolve(typeof request.result === 'string' ? request.result : null);
+        request.onerror = () => resolve(null);
+      });
+    }
+
+    function newTweetImageKey() {
+      return STORAGE_KEY + ':image:' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
+    }
+
+    function queueTweetImageStorage(slide) {
+      if (!slide || !slide.imageDataURL || originalImageIndexByDataURL.has(slide.imageDataURL) || slide[STORED_IMAGE_REF_KEY]) return Promise.resolve(true);
+      if (tweetImageStorageInFlight.has(slide)) return tweetImageStorageInFlight.get(slide);
+      const dataURL = slide.imageDataURL;
+      if (tweetStoredImageKeys.has(dataURL)) {
+        slide[STORED_IMAGE_REF_KEY] = tweetStoredImageKeys.get(dataURL);
+        return Promise.resolve(true);
+      }
+      const key = newTweetImageKey();
+      const pending = writeTweetImage(key, dataURL).then((stored) => {
+        if (!stored || slide.imageDataURL !== dataURL) return false;
+        slide[STORED_IMAGE_REF_KEY] = key;
+        tweetStoredImageKeys.set(dataURL, key);
+        // A imagem já está segura no IndexedDB; agora removemos a cópia grande
+        // do localStorage sem perder a referência ao recarregar.
+        return true;
+      }).catch(() => false).finally(() => tweetImageStorageInFlight.delete(slide));
+      tweetImageStorageInFlight.set(slide, pending);
+      return pending;
+    }
+
+    function compactTweetSlidesForStorage(slides) {
+      return slides.map((slide) => {
+        const stored = { ...slide };
+        const originalIndex = originalImageIndexByDataURL.get(stored.imageDataURL);
+        if (originalIndex !== undefined) {
+          delete stored.imageDataURL;
+          stored[ORIGINAL_IMAGE_REF_KEY] = originalIndex;
+          delete stored[STORED_IMAGE_REF_KEY];
+        } else if (stored[STORED_IMAGE_REF_KEY]) {
+          delete stored.imageDataURL;
+          delete stored[ORIGINAL_IMAGE_REF_KEY];
+        } else {
+          delete stored[ORIGINAL_IMAGE_REF_KEY];
+        }
+        return stored;
+      });
+    }
+
+    function expandTweetSlidesFromStorage(slides) {
+      return slides.map((slide) => {
+        const restored = { ...slide };
+        const originalIndex = Number(restored[ORIGINAL_IMAGE_REF_KEY]);
+        if (Number.isInteger(originalIndex) && ORIGINAL_SLIDES[originalIndex]) {
+          restored.imageDataURL = ORIGINAL_SLIDES[originalIndex].imageDataURL || null;
+        }
+        delete restored[ORIGINAL_IMAGE_REF_KEY];
+        return restored;
+      });
+    }
+
+    let tweetSaveQueue = Promise.resolve();
+    let tweetPendingSaves = 0;
+    let tweetSaveRevision = 0;
+    function persistTweetSlidesState() {
+      const snapshot = slidesState.map(slide => ({ ...slide }));
+      tweetPendingSaves++;
+      const task = tweetSaveQueue.then(async () => {
+        await Promise.all(snapshot.map(queueTweetImageStorage));
+        const payload = JSON.stringify(compactTweetSlidesForStorage(snapshot));
+        // O documento também precisa sobreviver se o localStorage estiver cheio.
+        const durable = await writeTweetImage(STORAGE_KEY + ':document', payload).catch(() => false);
+        const legacy = safeStorageSet(STORAGE_KEY, payload);
+        return durable || legacy;
+      }).finally(() => { tweetPendingSaves--; });
+      tweetSaveQueue = task.catch(() => false);
+      return task;
+    }
+    window.addEventListener('beforeunload', event => {
+      if (tweetPendingSaves) { event.preventDefault(); event.returnValue = ''; }
+    });
+
+    async function hydrateTweetStoredImages() {
+      const pending = slidesState.map(async (slide, index) => {
+        const key = slide && slide[STORED_IMAGE_REF_KEY];
+        if (!key || slide.imageDataURL) return;
+        const dataURL = await readTweetImage(key);
+        if (!dataURL) return;
+        slide.imageDataURL = dataURL;
+        tweetStoredImageKeys.set(dataURL, key);
+        loadSlideImage(index);
+      });
+      await Promise.all(pending);
+    }
+
+    const DEFAULT_PROFILE = {
+      name: 'Seu Perfil',
+      handle: 'seuperfil',
+      avatar: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4Ij48cmVjdCB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgcng9IjY0IiBmaWxsPSIjMWQxZDFmIi8+PHRleHQgeD0iNjQiIHk9Ijc4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjQyIiBmaWxsPSJ3aGl0ZSIgZm9udC1mYW1pbHk9IkFyaWFsIj5TUDwvdGV4dD48L3N2Zz4=',
+      avatarCrop: { scale: 1, x: 0, y: 0 }
+    };
+
+    function normalizeHandle(value) {
+      return String(value == null ? '' : value).trim().replace(/^@+/, '');
+    }
+
+    function normalizeAvatarCrop(value) {
+      const scale = Math.min(3, Math.max(1, Number(value && value.scale) || 1));
+      const limit = (scale - 1) / 2;
+      return {
+        scale,
+        x: Math.min(limit, Math.max(-limit, Number(value && value.x) || 0)),
+        y: Math.min(limit, Math.max(-limit, Number(value && value.y) || 0))
+      };
+    }
+
+    function normalizeProfileState(parsed) {
+      return {
+        name: typeof parsed?.name === 'string' ? parsed.name : DEFAULT_PROFILE.name,
+        handle: typeof parsed?.handle === 'string' ? normalizeHandle(parsed.handle) : DEFAULT_PROFILE.handle,
+        avatar: typeof parsed?.avatar === 'string' && parsed.avatar.startsWith('data:image/')
+          ? parsed.avatar
+          : DEFAULT_PROFILE.avatar,
+        avatarCrop: normalizeAvatarCrop(parsed?.avatarCrop)
+      };
+    }
+
+    function defaultProfileSlots() {
+      return {
+        'profile-1': normalizeProfileState(DEFAULT_PROFILE),
+        'profile-2': normalizeProfileState({
+          name: 'Perfil 2',
+          handle: '',
+          avatar: DEFAULT_PROFILE.avatar,
+          avatarCrop: DEFAULT_PROFILE.avatarCrop
+        })
+      };
+    }
+
+    function normalizeProfileCollection(parsed) {
+      const defaults = defaultProfileSlots();
+      const profiles = parsed && typeof parsed.profiles === 'object' ? parsed.profiles : {};
+      const activeProfileId = parsed && parsed.activeProfileId === 'profile-2' ? 'profile-2' : 'profile-1';
+      return {
+        activeProfileId,
+        profiles: {
+          'profile-1': normalizeProfileState(profiles['profile-1'] || defaults['profile-1']),
+          'profile-2': normalizeProfileState(profiles['profile-2'] || defaults['profile-2'])
+        }
+      };
+    }
+
+    function loadProfileCollection() {
+      try {
+        const collectionRaw = safeStorageGet(PROFILE_COLLECTION_STORAGE_KEY);
+        if (collectionRaw) {
+          const collection = normalizeProfileCollection(JSON.parse(collectionRaw));
+          if (new URLSearchParams(window.location.search).get('profile') === 'profile-2') collection.activeProfileId = 'profile-2';
+          return collection;
+        }
+        const legacyRaw = safeStorageGet(PROFILE_STORAGE_KEY);
+        const collection = normalizeProfileCollection({
+          activeProfileId: 'profile-1',
+          profiles: { 'profile-1': legacyRaw ? JSON.parse(legacyRaw) : DEFAULT_PROFILE }
+        });
+        safeStorageSet(PROFILE_COLLECTION_STORAGE_KEY, JSON.stringify(collection));
+        if (new URLSearchParams(window.location.search).get('profile') === 'profile-2') collection.activeProfileId = 'profile-2';
+        return collection;
+      } catch (e) {
+        const collection = normalizeProfileCollection(null);
+        if (new URLSearchParams(window.location.search).get('profile') === 'profile-2') collection.activeProfileId = 'profile-2';
+        return collection;
+      }
+    }
+
+    let profileCollectionState = loadProfileCollection();
+    let profileState = profileCollectionState.profiles[profileCollectionState.activeProfileId];
+
+    function saveProfileState() {
+      profileCollectionState.profiles[profileCollectionState.activeProfileId] = normalizeProfileState(profileState);
+      profileState = profileCollectionState.profiles[profileCollectionState.activeProfileId];
+      safeStorageSet(PROFILE_COLLECTION_STORAGE_KEY, JSON.stringify(profileCollectionState));
+      // Mantém o perfil ativo no formato antigo para sessões locais existentes.
+      safeStorageSet(PROFILE_STORAGE_KEY, JSON.stringify(profileState));
+      recordEditorMutation('profile');
+    }
+
+    function selectProfileSlot(profileId) {
+      if (!profileCollectionState.profiles[profileId] || profileId === profileCollectionState.activeProfileId) return;
+      profileCollectionState.profiles[profileCollectionState.activeProfileId] = normalizeProfileState(profileState);
+      profileCollectionState.activeProfileId = profileId;
+      profileState = profileCollectionState.profiles[profileId];
+      safeStorageSet(PROFILE_COLLECTION_STORAGE_KEY, JSON.stringify(profileCollectionState));
+      safeStorageSet(PROFILE_STORAGE_KEY, JSON.stringify(profileState));
+      avatarImg = new Image();
+      avatarImg.onload = () => slidesState.forEach((_, index) => renderSlide(index));
+      avatarImg.onerror = () => slidesState.forEach((_, index) => renderSlide(index));
+      avatarImg.src = profileState.avatar;
+      syncProfileDOM();
+      recordEditorMutation('profile-switch');
+    }
+
+    function applyAvatarCropElement(element, crop = profileState.avatarCrop) {
+      if (!element) return;
+      const normalized = normalizeAvatarCrop(crop);
+      element.style.setProperty('--avatar-scale', normalized.scale);
+      element.style.setProperty('--avatar-x', normalized.x);
+      element.style.setProperty('--avatar-y', normalized.y);
+    }
+
+    function syncProfileDOM() {
+      const nameInput = document.getElementById('profile-name');
+      const handleInput = document.getElementById('profile-handle');
+      const avatarPreview = document.getElementById('profile-avatar-preview');
+      if (nameInput && document.activeElement !== nameInput) nameInput.value = profileState.name;
+      if (handleInput && document.activeElement !== handleInput) handleInput.value = profileState.handle;
+      if (avatarPreview && avatarPreview.src !== profileState.avatar) avatarPreview.src = profileState.avatar;
+      applyAvatarCropElement(avatarPreview);
+      document.querySelectorAll('[data-profile-slot]').forEach((button) => {
+        const active = button.dataset.profileSlot === profileCollectionState.activeProfileId;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-pressed', String(active));
+      });
+      document.querySelectorAll('.tweet-render .name').forEach((el) => { el.textContent = profileState.name; });
+      document.querySelectorAll('.tweet-render .handle').forEach((el) => { el.textContent = '@' + profileState.handle; });
+      document.querySelectorAll('.tweet-render .avatar').forEach((el) => {
+        if (el.src !== profileState.avatar) el.src = profileState.avatar;
+        applyAvatarCropElement(el);
+      });
+    }
+
+    function normalizeAvatarFile(file) {
+      return new Promise((resolve, reject) => {
+        const imageName = String(file && file.name || '').toLowerCase();
+        const hasKnownImageExtension = /\.(avif|bmp|gif|jpe?g|png|webp)$/i.test(imageName);
+        if (!file || (!String(file.type || '').startsWith('image/') && !hasKnownImageExtension)) {
+          reject(new Error('Arquivo de imagem inválido.'));
+          return;
+        }
+        // FileReader é mais confiável no Windows do que carregar o Blob URL
+        // diretamente — alguns diálogos nativos retornam type vazio para JPG.
+        const reader = new FileReader();
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const maxSide = 1600;
+            const resize = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.round(img.naturalWidth * resize));
+            canvas.height = Math.max(1, Math.round(img.naturalHeight * resize));
+            const ctx = canvas.getContext('2d');
+            if (!ctx) throw new Error('Canvas indisponível.');
+
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg', 0.88));
+          } catch (error) {
+            reject(error);
+          }
+        };
+        img.onerror = () => {
+          reject(new Error('Formato não suportado pelo navegador. Use JPG, PNG, WebP, GIF, AVIF ou BMP.'));
+        };
+        reader.onerror = () => reject(new Error('Não foi possível ler o arquivo selecionado.'));
+        reader.onload = () => { img.src = String(reader.result || ''); };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function commitProfileAvatar(dataUrl, crop, loadedAvatar) {
+      avatarImg = loadedAvatar;
+      profileState.avatar = dataUrl;
+      profileState.avatarCrop = normalizeAvatarCrop(crop);
+      saveProfileState();
+      syncProfileDOM();
+      slidesState.forEach((_, index) => renderSlide(index));
+      setSendStatus('Foto de perfil atualizada.', 'success');
+    }
+
+    function setProfileAvatar(dataUrl, crop = { scale: 1, x: 0, y: 0 }, alreadyLoadedAvatar = null) {
+      // Ao confirmar o recorte, reutilizamos a imagem que acabou de ser
+      // exibida no modal. Isso evita uma segunda decodificação que falhava
+      // em alguns navegadores Windows mesmo com a prévia carregada.
+      if (alreadyLoadedAvatar && alreadyLoadedAvatar.naturalWidth > 0) {
+        commitProfileAvatar(dataUrl, crop, alreadyLoadedAvatar);
+        return;
+      }
+      const nextAvatar = new Image();
+      nextAvatar.onload = () => {
+        commitProfileAvatar(dataUrl, crop, nextAvatar);
+      };
+      nextAvatar.onerror = () => {
+        setSendStatus('Não foi possível carregar esta foto.', 'error');
+      };
+      nextAvatar.src = dataUrl;
+    }
+
+    let pendingAvatarCrop = null;
+    let avatarCropReturnFocus = null;
+
+    function updateAvatarCropPreview() {
+      if (!pendingAvatarCrop) return;
+      // Mantém o arquivo selecionado ao normalizar escala e deslocamento.
+      // Sem isso, o primeiro ajuste de zoom descartava dataUrl e a confirmação
+      // tentava salvar uma foto inexistente.
+      pendingAvatarCrop = { ...pendingAvatarCrop, ...normalizeAvatarCrop(pendingAvatarCrop) };
+      const image = document.getElementById('avatar-crop-image');
+      const zoom = document.getElementById('avatar-crop-zoom');
+      const output = document.getElementById('avatar-crop-zoom-value');
+      applyAvatarCropElement(image, pendingAvatarCrop);
+      if (zoom) zoom.value = pendingAvatarCrop.scale;
+      if (output) output.value = Math.round(pendingAvatarCrop.scale * 100) + '%';
+    }
+
+    function openAvatarCropper(dataUrl, crop = { scale: 1, x: 0, y: 0 }) {
+      const modal = document.getElementById('avatar-crop-modal');
+      const image = document.getElementById('avatar-crop-image');
+      if (!modal || !image || !dataUrl) return;
+      avatarCropReturnFocus = document.activeElement;
+      pendingAvatarCrop = { dataUrl, ...normalizeAvatarCrop(crop) };
+      image.src = dataUrl;
+      updateAvatarCropPreview();
+      modal.classList.add('visible');
+      modal.setAttribute('aria-hidden', 'false');
+      document.getElementById('avatar-crop-apply').focus();
+    }
+
+    function closeAvatarCropper() {
+      const modal = document.getElementById('avatar-crop-modal');
+      if (modal) {
+        modal.classList.remove('visible');
+        modal.setAttribute('aria-hidden', 'true');
+      }
+      pendingAvatarCrop = null;
+      if (avatarCropReturnFocus && avatarCropReturnFocus.focus) avatarCropReturnFocus.focus();
+    }
+
+    function wireAvatarCropper() {
+      const modal = document.getElementById('avatar-crop-modal');
+      const stage = document.getElementById('avatar-crop-stage');
+      const zoom = document.getElementById('avatar-crop-zoom');
+      const cancel = document.getElementById('avatar-crop-cancel');
+      const apply = document.getElementById('avatar-crop-apply');
+      if (!modal || !stage || !zoom || !cancel || !apply) return;
+
+      zoom.addEventListener('input', () => {
+        if (!pendingAvatarCrop) return;
+        pendingAvatarCrop.scale = Number(zoom.value);
+        updateAvatarCropPreview();
+      });
+      let drag = null;
+      stage.addEventListener('pointerdown', (event) => {
+        if (!pendingAvatarCrop) return;
+        drag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, cropX: pendingAvatarCrop.x, cropY: pendingAvatarCrop.y };
+        stage.setPointerCapture(event.pointerId);
+        event.preventDefault();
+      });
+      stage.addEventListener('pointermove', (event) => {
+        if (!drag || event.pointerId !== drag.pointerId || !pendingAvatarCrop) return;
+        const rect = stage.getBoundingClientRect();
+        pendingAvatarCrop.x = drag.cropX + (event.clientX - drag.x) / rect.width;
+        pendingAvatarCrop.y = drag.cropY + (event.clientY - drag.y) / rect.height;
+        updateAvatarCropPreview();
+      });
+      const finishDrag = (event) => {
+        if (!drag || event.pointerId !== drag.pointerId) return;
+        if (stage.hasPointerCapture(event.pointerId)) stage.releasePointerCapture(event.pointerId);
+        drag = null;
+      };
+      stage.addEventListener('pointerup', finishDrag);
+      stage.addEventListener('pointercancel', finishDrag);
+      cancel.addEventListener('click', closeAvatarCropper);
+      apply.addEventListener('click', () => {
+        if (!pendingAvatarCrop) return;
+        const selection = { ...pendingAvatarCrop };
+        const cropImage = document.getElementById('avatar-crop-image');
+        closeAvatarCropper();
+        setProfileAvatar(selection.dataUrl, selection, cropImage);
+      });
+      modal.addEventListener('click', (event) => { if (event.target === modal) closeAvatarCropper(); });
+    }
+
+    function setupProfileControls() {
+      const nameInput = document.getElementById('profile-name');
+      const handleInput = document.getElementById('profile-handle');
+      const avatarInput = document.getElementById('profile-avatar-input');
+      const cropButton = document.getElementById('btn-profile-crop');
+      document.querySelectorAll('[data-profile-slot]').forEach((button) => {
+        button.addEventListener('click', () => selectProfileSlot(button.dataset.profileSlot));
+      });
+      if (nameInput) {
+        nameInput.value = profileState.name;
+        nameInput.addEventListener('input', () => {
+          profileState.name = nameInput.value;
+          saveProfileState();
+          syncProfileDOM();
+        });
+      }
+      if (handleInput) {
+        handleInput.value = profileState.handle;
+        handleInput.addEventListener('input', () => {
+          const normalized = normalizeHandle(handleInput.value);
+          if (handleInput.value !== normalized) handleInput.value = normalized;
+          profileState.handle = normalized;
+          saveProfileState();
+          syncProfileDOM();
+        });
+      }
+      if (avatarInput) {
+        avatarInput.addEventListener('change', async () => {
+          const file = avatarInput.files && avatarInput.files[0];
+          if (!file) return;
+          try {
+            const dataUrl = await normalizeAvatarFile(file);
+            openAvatarCropper(dataUrl);
+          } catch (error) {
+            setSendStatus(error && error.message ? error.message : 'Não foi possível carregar esta foto.', 'error');
+          } finally {
+            avatarInput.value = '';
+          }
+        });
+      }
+      if (cropButton) cropButton.addEventListener('click', () => openAvatarCropper(profileState.avatar, profileState.avatarCrop));
+      wireAvatarCropper();
+      syncProfileDOM();
+    }
+
+    let slidesState = [];
+    let avatarImg = null;
+    let activeSlideIndex = null;
+    let currentTheme = safeStorageGet('carrossel-universal-carrossel-theme') || 'light';
+    const UI_THEME_STORAGE_KEY = 'carrossel-editor-ui-theme-v1';
+    let currentUiTheme = document.documentElement.dataset.uiTheme === 'dark' ? 'dark' : 'light';
+    const slideImageCache = new Map();
+
+    function applyUiTheme() {
+      const dark = currentUiTheme === 'dark';
+      document.documentElement.dataset.uiTheme = currentUiTheme;
+      const button = document.getElementById('btn-ui-theme');
+      if (button) {
+        const action = dark ? 'Ativar interface clara' : 'Ativar interface escura';
+        button.setAttribute('aria-label', action);
+        button.setAttribute('title', action);
+        button.setAttribute('aria-pressed', String(dark));
+      }
+      const icon = document.getElementById('ui-theme-icon');
+      if (icon) icon.textContent = dark ? '☀' : '☾';
+    }
+
+    function toggleUiTheme() {
+      currentUiTheme = currentUiTheme === 'dark' ? 'light' : 'dark';
+      safeStorageSet(UI_THEME_STORAGE_KEY, currentUiTheme);
+      applyUiTheme();
+    }
+
+    // ─── Undo global do documento ──────────────────────────
+    const UNDO_LIMIT = 50;
+    const UNDO_STORAGE_KEY = STORAGE_KEY + '-undo-v1';
+    let tweetUndoController = null;
+
+    function createUndoController(options) {
+      let undoStack = [];
+      let baseline = null;
+      let armed = false;
+      let restoring = false;
+
+      function serialize(snapshot) {
+        try { return JSON.stringify(snapshot); }
+        catch (e) { return ''; }
+      }
+
+      function loadStack() {
+        // O histórico de desfazer é útil apenas enquanto esta página está
+        // aberta. Persistir snapshots completos (especialmente com fotos) no
+        // sessionStorage tem sua própria cota limitada. Fotos duplicadas
+        // tornavam o histórico pesado sem ajudar a persistir o documento.
+        try { sessionStorage.removeItem(options.storageKey); } catch (e) {}
+        return [];
+      }
+
+      function persistStack() {
+        // Mantém o histórico apenas em memória para não disputar a cota usada
+        // pelo autosave do carrossel.
+      }
+
+      function arm() {
+        undoStack = loadStack();
+        baseline = options.captureSnapshot();
+        armed = true;
+      }
+
+      function record() {
+        if (!armed || restoring) return;
+        const current = options.captureSnapshot();
+        if (serialize(current) === serialize(baseline)) return;
+        if (baseline !== null) undoStack.push(baseline);
+        if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+        baseline = current;
+        persistStack();
+      }
+
+      function checkpoint() {
+        if (!armed || restoring) return;
+        const current = options.captureSnapshot();
+        const last = undoStack.length ? undoStack[undoStack.length - 1] : null;
+        if (serialize(current) !== serialize(last)) undoStack.push(current);
+        if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+        baseline = current;
+        persistStack();
+      }
+
+      function undo() {
+        if (!armed || restoring || undoStack.length === 0) return false;
+        const snapshot = undoStack.pop();
+        persistStack();
+        restoring = true;
+        try {
+          Promise.resolve(options.restoreSnapshot(snapshot)).then(() => {
+            baseline = snapshot;
+          }).catch(console.error).finally(() => { restoring = false; });
+        } catch (error) { restoring = false; throw error; }
+        return true;
+      }
+
+      function resetBaseline() {
+        baseline = options.captureSnapshot();
+      }
+
+      return { arm, record, checkpoint, undo, resetBaseline };
+    }
+
+    function captureTweetSnapshot() {
+      const snapshotSlides = JSON.parse(JSON.stringify(slidesState || []));
+      document.querySelectorAll('.tweet-render .body').forEach((bodyEl) => {
+        const match = String(bodyEl.id || '').match(/^body-(\d+)$/);
+        const index = match ? Number(match[1]) : -1;
+        if (snapshotSlides[index]) snapshotSlides[index].text = htmlToMarkdown(bodyEl.innerHTML);
+      });
+      const nameInput = document.getElementById('profile-name');
+      const handleInput = document.getElementById('profile-handle');
+      const snapshotProfile = {
+        name: nameInput ? nameInput.value : profileState.name,
+        handle: handleInput ? normalizeHandle(handleInput.value) : profileState.handle,
+        avatar: profileState.avatar,
+        avatarCrop: normalizeAvatarCrop(profileState.avatarCrop)
+      };
+      const captionEl = document.getElementById('ig-caption');
+      return {
+        slides: snapshotSlides,
+        profile: snapshotProfile,
+        profileCollection: JSON.parse(JSON.stringify(profileCollectionState)),
+        theme: currentTheme,
+        ratio: currentRatio,
+        fontSize: currentTweetFontSize,
+        caption: captionEl ? captionEl.value : ''
+      };
+    }
+
+    async function restoreTweetSnapshot(snapshot) {
+      if (!snapshot || !Array.isArray(snapshot.slides) || !snapshot.profile) return;
+      const structureChanged = slidesState.length !== snapshot.slides.length;
+      slidesState = JSON.parse(JSON.stringify(snapshot.slides));
+      profileCollectionState = snapshot.profileCollection
+        ? normalizeProfileCollection(snapshot.profileCollection)
+        : normalizeProfileCollection({ profiles: { 'profile-1': snapshot.profile } });
+      profileState = profileCollectionState.profiles[profileCollectionState.activeProfileId];
+      currentTheme = snapshot.theme === 'dark' ? 'dark' : 'light';
+      currentRatio = RATIO_HEIGHTS[snapshot.ratio] ? snapshot.ratio : '4:5';
+      H = RATIO_HEIGHTS[currentRatio];
+      currentTweetFontSize = Math.min(TWEET_FONT_SIZE_MAX, Math.max(TWEET_FONT_SIZE_MIN, Math.round(Number(snapshot.fontSize) || 42)));
+
+      await persistTweetSlidesState();
+      safeStorageSet(PROFILE_STORAGE_KEY, JSON.stringify(profileState));
+      safeStorageSet(PROFILE_COLLECTION_STORAGE_KEY, JSON.stringify(profileCollectionState));
+      safeStorageSet('carrossel-universal-carrossel-theme', currentTheme);
+      safeStorageSet('carrossel-universal-tweet-ratio', currentRatio);
+      safeStorageSet(TWEET_FONT_SIZE_STORAGE_KEY, String(currentTweetFontSize));
+      safeStorageSet(STORAGE_KEY + '-caption', snapshot.caption || '');
+
+      if (structureChanged) {
+        setUndoFeedback('Ação desfeita');
+        location.reload();
+        return;
+      }
+
+      if (document.activeElement && typeof document.activeElement.blur === 'function') {
+        document.activeElement.blur();
+      }
+      hideHighlightMenu();
+      slidesState.forEach((slide, index) => {
+        const bodyEl = document.getElementById('body-' + index);
+        if (bodyEl) bodyEl.innerHTML = markdownToHtml(slide.text || '');
+      });
+      const captionEl = document.getElementById('ig-caption');
+      if (captionEl) captionEl.value = snapshot.caption || '';
+      avatarImg = new Image();
+      avatarImg.onload = () => slidesState.forEach((_, index) => renderSlide(index));
+      avatarImg.src = profileState.avatar;
+      syncProfileDOM();
+      applyTheme();
+      applyRatio();
+      syncGlobalTweetFontSizeControl();
+      buildSlideRail();
+      slidesState.forEach((_, index) => loadSlideImage(index));
+    }
+
+    function recordEditorMutation(reason) {
+      if (tweetUndoController) tweetUndoController.record(reason);
+    }
+
+    function pushCurrentUndoSnapshot() {
+      if (tweetUndoController) tweetUndoController.checkpoint();
+    }
+
+    function undoEditorAction() {
+      if (!tweetUndoController || !tweetUndoController.undo()) return false;
+      setUndoFeedback('Ação desfeita');
+      return true;
+    }
+
+    function armEditorUndo() {
+      tweetUndoController = createUndoController({
+        storageKey: UNDO_STORAGE_KEY,
+        captureSnapshot: captureTweetSnapshot,
+        restoreSnapshot: restoreTweetSnapshot
+      });
+      tweetUndoController.arm();
+    }
+
+    function setUndoFeedback(message) {
+      const status = document.getElementById('save-status');
+      if (!status) return;
+      status.textContent = message;
+      status.classList.add('saved');
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (!(e.metaKey || e.ctrlKey) || e.shiftKey || e.altKey || e.key.toLowerCase() !== 'z') return;
+      if (!undoEditorAction()) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }, true);
+
+    function normalizeTweetSlides(slides) {
+      return slides.map((slide, index) => ({
+        ...slide,
+        fontSize: Math.min(TWEET_FONT_SIZE_MAX, Math.max(TWEET_FONT_SIZE_MIN, Math.round(Number(slide.fontSize) || currentTweetFontSize))),
+        isCTA: slide.isCTA === true || /\bcta\b/i.test(String(slide.label || '')),
+        isCapa: slide.isCapa === true || /\bcapa\b/i.test(String(slide.label || ''))
+      }));
+    }
+
+    function loadState() {
+      try {
+        const raw = safeStorageGet(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          // Aceita qualquer length (>= 1): permite add/delete de slides.
+          if (Array.isArray(parsed) && parsed.length >= 1) {
+            return normalizeTweetSlides(expandTweetSlidesFromStorage(parsed));
+          }
+        }
+      } catch (e) {}
+      return normalizeTweetSlides(ORIGINAL_SLIDES.map(s => ({
+        label: s.label, text: s.text, fontSize: s.fontSize || 42, imageDataURL: s.imageDataURL || null
+      })));
+    }
+
+    function flushDOMToState() {
+      document.querySelectorAll('.tweet-render .body').forEach((bodyEl) => {
+        const match = String(bodyEl.id || '').match(/^body-(\d+)$/);
+        if (!match) return;
+        const idx = Number(match[1]);
+        if (!slidesState[idx]) return;
+        slidesState[idx].text = htmlToMarkdown(bodyEl.innerHTML);
+      });
+      saveState();
+    }
+
+    function refreshTweetAfterStructureChange(activeIndex) {
+      buildUI();
+      slidesState.forEach((_, index) => loadSlideImage(index));
+      requestAnimationFrame(() => {
+        setActiveSlide(activeIndex);
+        const card = document.querySelectorAll('.slide-card')[activeIndex];
+        if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    }
+
+    // Add/Delete slide inteiro, preservando a posição sem recarregar a página.
+    function addSlide() {
+      flushDOMToState();
+      const insertAt = slidesState.length;
+      slidesState.push({
+        label: 'Slide',
+        text: 'adicione aqui a sua copy',
+        fontSize: currentTweetFontSize,
+        imageDataURL: null,
+        isCTA: false,
+        isCapa: false
+      });
+      saveState();
+      refreshTweetAfterStructureChange(insertAt);
+    }
+    async function deleteCurrentSlide() {
+      flushDOMToState();
+      if (slidesState.length <= 1) {
+        alert('Não dá pra apagar o último slide.');
+        return;
+      }
+      const idx = (typeof activeSlideIndex === 'number') ? activeSlideIndex : null;
+      if (idx === null || idx === undefined) {
+        alert('Clica num slide primeiro pra ele ficar ativo, depois aperta × Slide.');
+        return;
+      }
+      if (!confirm('Apagar o slide ' + (idx + 1) + '?')) return;
+      slidesState.splice(idx, 1);
+      await saveState();
+      location.reload();
+    }
+
+    async function saveState(options = {}) {
+      const { record = true } = options;
+      const revision = ++tweetSaveRevision;
+      try {
+        if (record) recordEditorMutation('slides');
+        const saving = document.getElementById('save-status');
+        saving.textContent = 'salvando…';
+        saving.classList.remove('saved');
+        const persisted = await persistTweetSlidesState();
+        if (revision !== tweetSaveRevision) return persisted;
+        const status = document.getElementById('save-status');
+        if (persisted) {
+          status.textContent = 'salvo no navegador às ' + new Date().toLocaleTimeString();
+          status.classList.add('saved');
+        } else {
+          status.textContent = 'não foi possível salvar · exporte antes de fechar';
+          status.classList.remove('saved');
+          // O status acima permanece visível. Não mostramos toast aqui: esta
+          // função roda a cada edição e o aviso repetido escondia o editor.
+        }
+        return persisted;
+      } catch (e) {
+        document.getElementById('save-status').textContent = 'erro ao salvar: ' + e.message;
+      }
+    }
+
+    function localApiFetch(url, options = {}) {
+      const headers = new Headers(options.headers || {});
+      headers.set('X-Carrossel-CSRF', window.CARROSSEL_CSRF || '');
+      return fetch(url, { ...options, headers });
+    }
+
+    function setSendStatus(msg, kind) {
+      const el = document.getElementById('send-status');
+      el.textContent = msg;
+      el.className = 'send-status visible' + (kind ? ' ' + kind : '');
+      if (kind === 'success' || kind === 'error') {
+        setTimeout(() => el.classList.remove('visible'), 6000);
+      }
+    }
+
+    function setGlobalTweetFontSize(value, options = {}) {
+      const { persist = true, record = true } = options;
+      const size = Math.min(TWEET_FONT_SIZE_MAX, Math.max(TWEET_FONT_SIZE_MIN, Math.round(Number(value) || 42)));
+      currentTweetFontSize = size;
+      slidesState.forEach((slide) => { slide.fontSize = size; });
+      document.querySelectorAll('.tweet-render .body').forEach((bodyEl, index) => {
+        bodyEl.style.fontSize = size + 'px';
+        bodyEl.style.lineHeight = (size * TWEET_COPY_LINE_HEIGHT) + 'px';
+        applyLayout(index);
+      });
+      document.querySelectorAll('[data-slide-font-size]').forEach((control) => {
+        control.value = String(size);
+        const output = document.getElementById(control.getAttribute('data-slide-font-size-output'));
+        if (output) output.value = size + ' px';
+      });
+      syncGlobalTweetFontSizeControl();
+      if (!persist) return;
+      safeStorageSet(TWEET_FONT_SIZE_STORAGE_KEY, String(size));
+      saveState({ record: false });
+      if (record) recordEditorMutation('font-size');
+    }
+
+    function syncGlobalTweetFontSizeControl() {
+      const control = document.getElementById('tweet-global-font-size');
+      const output = document.getElementById('tweet-global-font-size-value');
+      if (control) control.value = String(currentTweetFontSize);
+      if (output) output.value = currentTweetFontSize + ' px';
+    }
+
+    function setSlideTweetFontSize(index, value, options = {}) {
+      const { persist = true, record = true } = options;
+      const slide = slidesState[index];
+      if (!slide) return;
+      const size = Math.min(TWEET_FONT_SIZE_MAX, Math.max(TWEET_FONT_SIZE_MIN, Math.round(Number(value) || currentTweetFontSize)));
+      slide.fontSize = size;
+      const control = document.getElementById('slide-font-size-' + index);
+      const output = document.getElementById('slide-font-size-value-' + index);
+      if (control) control.value = String(size);
+      if (output) output.value = size + ' px';
+      const bodyEl = document.getElementById('body-' + index);
+      if (bodyEl) {
+        bodyEl.style.fontSize = size + 'px';
+        bodyEl.style.lineHeight = (size * TWEET_COPY_LINE_HEIGHT) + 'px';
+        requestAnimationFrame(() => applyLayout(index));
+      }
+      if (!persist) return;
+      saveState({ record: false });
+      if (record) recordEditorMutation('slide-font-size');
+    }
+
+    function setupGlobalTweetFontSizeControl() {
+      const control = document.getElementById('tweet-global-font-size');
+      if (!control) return;
+      syncGlobalTweetFontSizeControl();
+      control.addEventListener('input', () => setGlobalTweetFontSize(control.value, { persist: false, record: false }));
+      control.addEventListener('change', () => setGlobalTweetFontSize(control.value, { persist: true, record: true }));
+    }
+
+    let deliveryBusy = false;
+    function setDeliveryBusy(active, ownerId) {
+      deliveryBusy = active;
+      ['btn-download-all', 'btn-send-tg', 'btn-publish-ig'].forEach(id => {
+        const button = document.getElementById(id);
+        if (!button) return;
+        button.disabled = active;
+        button.setAttribute('aria-busy', String(active && id === ownerId));
+      });
+    }
+
+    // ─── Markdown ↔ HTML helpers ───────────────────────────
+    function escapeHtml(s) {
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    function legacyMarkdownToHtml(text) {
+      // **bold** → <strong>, \n → <br>. Escapa HTML primeiro pra evitar injection.
+      let s = escapeHtml(text || '');
+      // 0. Remove linhas que contêm apenas ** (órfãos de bold mal-formado de estados antigos)
+      s = s.replace(/^[ \t]*\*\*[ \t]*$/gm, '');
+      // 1. Bold pode atravessar quebras de linha ([^*]+? permite \n, non-greedy para no 1º **)
+      s = s.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
+      // 2. Remove ** órfãos remanescentes (não pareados)
+      s = s.replace(/\*\*/g, '');
+      // 3. \n → <br>
+      s = s.replace(/\n/g, '<br>');
+      // 4. Colapsa sequências de 3+ <br> que sobraram da limpeza de órfãos
+      s = s.replace(/(<br>\s*){3,}/g, '<br><br>');
+      return s;
+    }
+    function legacyHtmlToMarkdown(html) {
+      // Converte de volta. Trata <br>, <div>, <p> (contenteditable às vezes insere), <strong>/<b>.
+      let s = html || '';
+      s = s.replace(/<div><br\s*\/?><\/div>/gi, '\n');
+      s = s.replace(/<div>/gi, '\n').replace(/<\/div>/gi, '');
+      s = s.replace(/<p>/gi, '\n').replace(/<\/p>/gi, '');
+      s = s.replace(/<br\s*\/?>/gi, '\n');
+      s = s.replace(/<(strong|b)\b[^>]*>([\s\S]*?)<\/(strong|b)>/gi, '**$2**');
+      s = s.replace(/<[^>]+>/g, '');
+      s = s.replace(/&nbsp;/gi, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+      // Normaliza newlines: máx 2 consecutivos, sem espaços trailing
+      s = s.replace(/ /g, ' ');
+      s = s.replace(/[ \t]+\n/g, '\n');
+      s = s.replace(/\n{3,}/g, '\n\n');
+      return s;
+    }
+
+    const HIGHLIGHT_COLORS = ['yellow', 'pink', 'green', 'blue'];
+    const HIGHLIGHT_THEME_COLORS = {
+      light: {
+        yellow: 'rgba(255, 228, 94, 0.82)',
+        pink: 'rgba(255, 122, 200, 0.76)',
+        green: 'rgba(128, 226, 126, 0.76)',
+        blue: 'rgba(100, 216, 255, 0.76)'
+      },
+      dark: {
+        yellow: 'rgba(255, 214, 10, 0.94)',
+        pink: 'rgba(255, 100, 190, 0.92)',
+        green: 'rgba(80, 220, 120, 0.90)',
+        blue: 'rgba(64, 200, 255, 0.90)'
+      }
+    };
+
+    function normalizeHighlightColor(value) {
+      return HIGHLIGHT_COLORS.includes(value) ? value : null;
+    }
+
+    function parseRichTextMarkdown(text) {
+      let s = escapeHtml(text || '');
+      s = s.replace(/^[ \t]*\*\*[ \t]*$/gm, '');
+      s = s.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
+      s = s.replace(/\*\*/g, '');
+      s = s.replace(
+        /\[hl=(yellow|pink|green|blue)\]([\s\S]*?)\[\/hl\]/g,
+        '<mark data-highlight="$1">$2</mark>'
+      );
+      s = s.replace(/\n/g, '<br>');
+      return s.replace(/(<br>\s*){3,}/g, '<br><br>');
+    }
+
+    function serializeRichTextDOM(html) {
+      const root = document.createElement('div');
+      root.innerHTML = html || '';
+
+      function visit(node) {
+        if (node.nodeType === Node.TEXT_NODE) return node.textContent || '';
+        if (node.nodeType !== Node.ELEMENT_NODE) return '';
+        const tag = (node.tagName || '').toUpperCase();
+        if (tag === 'BR') return '\n';
+        let content = Array.from(node.childNodes).map(visit).join('');
+        if (tag === 'STRONG' || tag === 'B') content = '**' + content + '**';
+        if (tag === 'MARK') {
+          const color = normalizeHighlightColor(node.dataset.highlight);
+          if (color) content = '[hl=' + color + ']' + content + '[/hl]';
+        }
+        if (tag === 'DIV' || tag === 'P') content = '\n' + content;
+        return content;
+      }
+
+      return Array.from(root.childNodes).map(visit).join('')
+        .replace(/\u00a0/g, ' ')
+        .replace(/[ \t]+\n/g, '\n')
+        .replace(/\n{3,}/g, '\n\n');
+    }
+
+    function markdownToHtml(text) { return parseRichTextMarkdown(text); }
+    function htmlToMarkdown(html) { return serializeRichTextDOM(html); }
+
+    const highlightMenu = document.getElementById('tweet-highlight-menu');
+    let savedHighlightRange = null;
+    let savedHighlightBody = null;
+    let highlightSelectionFrame = 0;
+    const richTextGraphemeSegmenter = typeof Intl !== 'undefined' && Intl.Segmenter
+      ? new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+      : null;
+
+    function getTextGraphemes(text) {
+      const value = String(text || '');
+      if (richTextGraphemeSegmenter) {
+        return Array.from(richTextGraphemeSegmenter.segment(value), part => ({
+          text: part.segment,
+          start: part.index,
+          end: part.index + part.segment.length
+        }));
+      }
+      let offset = 0;
+      return Array.from(value, char => {
+        const segment = { text: char, start: offset, end: offset + char.length };
+        offset += char.length;
+        return segment;
+      });
+    }
+
+    function richTextNodeLength(node) {
+      if (node.nodeType === Node.TEXT_NODE) return (node.textContent || '').length;
+      if (node.nodeType !== Node.ELEMENT_NODE) return 0;
+      if ((node.tagName || '').toUpperCase() === 'BR') return 1;
+      return Array.from(node.childNodes).reduce((total, child) => total + richTextNodeLength(child), 0);
+    }
+
+    function getBoundaryOffset(bodyEl, container, offset) {
+      if (!bodyEl || !container || (container !== bodyEl && !bodyEl.contains(container))) return null;
+      let total = 0;
+      if (container.nodeType === Node.TEXT_NODE) {
+        total = Math.min(offset, (container.textContent || '').length);
+      } else {
+        const children = Array.from(container.childNodes || []);
+        total = children.slice(0, Math.min(offset, children.length))
+          .reduce((sum, child) => sum + richTextNodeLength(child), 0);
+      }
+      let current = container;
+      while (current && current !== bodyEl) {
+        let sibling = current.previousSibling;
+        while (sibling) {
+          total += richTextNodeLength(sibling);
+          sibling = sibling.previousSibling;
+        }
+        current = current.parentNode;
+      }
+      return current === bodyEl ? total : null;
+    }
+
+    function extractRichTextUnits(bodyEl) {
+      const units = [];
+      function visit(node, context) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          for (const char of node.textContent || '') {
+            units.push({ char, bold: context.bold, highlight: context.highlight });
+          }
+          return;
+        }
+        if (node.nodeType !== Node.ELEMENT_NODE) return;
+        const tag = (node.tagName || '').toUpperCase();
+        if (tag === 'BR') {
+          units.push({ char: '\n', bold: false, highlight: null });
+          return;
+        }
+        if ((tag === 'DIV' || tag === 'P') && units.length && units[units.length - 1].char !== '\n') {
+          units.push({ char: '\n', bold: false, highlight: null });
+        }
+        const next = {
+          bold: context.bold || tag === 'STRONG' || tag === 'B',
+          highlight: tag === 'MARK'
+            ? normalizeHighlightColor(node.dataset.highlight)
+            : context.highlight
+        };
+        Array.from(node.childNodes).forEach(child => visit(child, next));
+      }
+      Array.from(bodyEl.childNodes).forEach(child => visit(child, { bold: false, highlight: null }));
+      return units;
+    }
+
+    function renderRichTextUnits(units) {
+      const root = document.createElement('div');
+      let index = 0;
+      while (index < units.length) {
+        const unit = units[index];
+        if (unit.char === '\n') {
+          root.appendChild(document.createElement('br'));
+          index += 1;
+          continue;
+        }
+        let end = index + 1;
+        while (
+          end < units.length &&
+          units[end].char !== '\n' &&
+          units[end].bold === unit.bold &&
+          units[end].highlight === unit.highlight
+        ) end += 1;
+        let node = document.createTextNode(units.slice(index, end).map(item => item.char).join(''));
+        if (unit.bold) {
+          const strong = document.createElement('strong');
+          strong.appendChild(node);
+          node = strong;
+        }
+        if (unit.highlight) {
+          const mark = document.createElement('mark');
+          mark.dataset.highlight = unit.highlight;
+          mark.appendChild(node);
+          node = mark;
+        }
+        root.appendChild(node);
+        index = end;
+      }
+      return root.innerHTML;
+    }
+
+    function getTweetBodyForRange(range) {
+      if (!range || range.collapsed) return null;
+      const startElement = range.startContainer.nodeType === Node.ELEMENT_NODE
+        ? range.startContainer
+        : range.startContainer.parentElement;
+      const endElement = range.endContainer.nodeType === Node.ELEMENT_NODE
+        ? range.endContainer
+        : range.endContainer.parentElement;
+      const startBody = startElement && startElement.closest('.tweet-render .body');
+      const endBody = endElement && endElement.closest('.tweet-render .body');
+      return startBody && startBody === endBody ? startBody : null;
+    }
+
+    function locateRichTextOffset(bodyEl, targetOffset) {
+      let remaining = Math.max(0, targetOffset);
+      let found = null;
+      function visit(node) {
+        if (found) return;
+        if (node.nodeType === Node.TEXT_NODE) {
+          const length = (node.textContent || '').length;
+          if (remaining <= length) found = { container: node, offset: remaining };
+          else remaining -= length;
+          return;
+        }
+        if (node.nodeType !== Node.ELEMENT_NODE) return;
+        if ((node.tagName || '').toUpperCase() === 'BR') {
+          const parent = node.parentNode;
+          const index = Array.prototype.indexOf.call(parent.childNodes, node);
+          if (remaining === 0) found = { container: parent, offset: index };
+          else {
+            remaining -= 1;
+            if (remaining === 0) found = { container: parent, offset: index + 1 };
+          }
+          return;
+        }
+        Array.from(node.childNodes).forEach(visit);
+      }
+      Array.from(bodyEl.childNodes).forEach(visit);
+      return found || { container: bodyEl, offset: bodyEl.childNodes.length };
+    }
+
+    function syncHighlightedBody(bodyEl) {
+      const index = Number(String(bodyEl.id || '').replace('body-', ''));
+      if (!Number.isInteger(index) || !slidesState[index]) return;
+      slidesState[index].text = htmlToMarkdown(bodyEl.innerHTML);
+      saveState();
+      applyLayout(index);
+      recordEditorMutation('highlight');
+    }
+
+    function positionHighlightMenu(range) {
+      if (!highlightMenu || !range) return;
+      const rect = Array.from(range.getClientRects())[0] || range.getBoundingClientRect();
+      if (!rect.width && !rect.height) return;
+      const gap = 9;
+      const menuWidth = highlightMenu.offsetWidth || 218;
+      const menuHeight = highlightMenu.offsetHeight || 42;
+      let left = rect.left + rect.width / 2 - menuWidth / 2;
+      left = Math.max(8, Math.min(left, window.innerWidth - menuWidth - 8));
+      let top = rect.top - menuHeight - gap;
+      if (top < 8) top = rect.bottom + gap;
+      highlightMenu.style.left = Math.round(left) + 'px';
+      highlightMenu.style.top = Math.round(top) + 'px';
+    }
+
+    function showHighlightMenu(range) {
+      const bodyEl = getTweetBodyForRange(range);
+      if (!highlightMenu || !bodyEl) return hideHighlightMenu();
+      savedHighlightRange = range.cloneRange();
+      savedHighlightBody = bodyEl;
+      highlightMenu.classList.add('is-visible');
+      highlightMenu.setAttribute('aria-hidden', 'false');
+      positionHighlightMenu(range);
+    }
+
+    function hideHighlightMenu() {
+      if (!highlightMenu) return;
+      highlightMenu.classList.remove('is-visible');
+      highlightMenu.setAttribute('aria-hidden', 'true');
+      savedHighlightRange = null;
+      savedHighlightBody = null;
+    }
+
+    function updateHighlightSelection(color) {
+      if (!savedHighlightRange || !savedHighlightBody) return;
+      const bodyEl = savedHighlightBody;
+      const start = getBoundaryOffset(
+        bodyEl,
+        savedHighlightRange.startContainer,
+        savedHighlightRange.startOffset
+      );
+      const end = getBoundaryOffset(
+        bodyEl,
+        savedHighlightRange.endContainer,
+        savedHighlightRange.endOffset
+      );
+      if (start === null || end === null || end <= start) return;
+      const units = extractRichTextUnits(bodyEl);
+      const safeColor = normalizeHighlightColor(color);
+      for (let index = start; index < Math.min(end, units.length); index += 1) {
+        if (units[index].char !== '\n') units[index].highlight = safeColor;
+      }
+      bodyEl.innerHTML = renderRichTextUnits(units);
+      syncHighlightedBody(bodyEl);
+      const caret = locateRichTextOffset(bodyEl, end);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      const caretRange = document.createRange();
+      caretRange.setStart(caret.container, caret.offset);
+      caretRange.collapse(true);
+      selection.addRange(caretRange);
+      hideHighlightMenu();
+      bodyEl.focus({ preventScroll: true });
+    }
+
+    function applyHighlightToSavedRange(color) {
+      updateHighlightSelection(color);
+    }
+
+    function clearHighlightFromSavedRange() {
+      updateHighlightSelection(null);
+    }
+
+    document.addEventListener('selectionchange', () => {
+      if (highlightSelectionFrame) cancelAnimationFrame(highlightSelectionFrame);
+      highlightSelectionFrame = requestAnimationFrame(() => {
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+          if (!highlightMenu || !highlightMenu.contains(document.activeElement)) hideHighlightMenu();
+          return;
+        }
+        const range = selection.getRangeAt(0);
+        if (getTweetBodyForRange(range)) showHighlightMenu(range);
+        else hideHighlightMenu();
+      });
+    });
+
+    if (highlightMenu) {
+      highlightMenu.querySelectorAll('[data-highlight-color]').forEach(button => {
+        button.addEventListener('mousedown', e => e.preventDefault());
+        button.addEventListener('click', () => applyHighlightToSavedRange(button.dataset.highlightColor));
+      });
+      const clearButton = highlightMenu.querySelector('[data-highlight-action="clear"]');
+      clearButton.addEventListener('mousedown', e => e.preventDefault());
+      clearButton.addEventListener('click', clearHighlightFromSavedRange);
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && savedHighlightBody) {
+        const bodyEl = savedHighlightBody;
+        hideHighlightMenu();
+        bodyEl.focus({ preventScroll: true });
+      }
+    });
+    window.addEventListener('resize', () => {
+      if (savedHighlightRange) positionHighlightMenu(savedHighlightRange);
+    });
+    document.addEventListener('scroll', () => {
+      if (savedHighlightRange) positionHighlightMenu(savedHighlightRange);
+    }, true);
+
+    // ─── getLineSegmentsFromDOM ─────────────────────────────
+    // Lê o .body contenteditable e retorna lines = [[{text, bold, highlight}, ...], ...]
+    // usando Range.getBoundingClientRect() pra detectar quebras reais que o browser fez.
+    // Isso garante paridade pixel-perfect entre DOM (visual) e Canvas (export).
+    function getLineSegmentsFromDOM(bodyEl) {
+      const lines = [];
+      let currentLine = [];
+      let currentTop = null;
+      let currentSeg = null;
+      const FLUSH = () => {
+        if (currentSeg) { currentLine.push(currentSeg); currentSeg = null; }
+        if (currentLine.length > 0) lines.push(currentLine);
+        else lines.push([{ text: '', bold: false, highlight: null }]);
+        currentLine = [];
+        currentTop = null;
+      };
+      const PUSH_CHAR = (ch, isBold, highlightColor, top) => {
+        // Detecta nova linha pela mudança de top do bounding rect.
+        // Tolerância de 5px pra ignorar variações sub-pixel.
+        if (currentTop === null) {
+          currentTop = top;
+        } else if (Math.abs(top - currentTop) > 5) {
+          if (currentSeg) currentLine.push(currentSeg);
+          if (currentLine.length > 0) lines.push(currentLine);
+          currentLine = [];
+          currentSeg = null;
+          currentTop = top;
+        }
+        if (
+          !currentSeg ||
+          currentSeg.bold !== isBold ||
+          currentSeg.highlight !== highlightColor
+        ) {
+          if (currentSeg) currentLine.push(currentSeg);
+          currentSeg = { text: ch, bold: isBold, highlight: highlightColor };
+        } else {
+          currentSeg.text += ch;
+        }
+      };
+      function walk(node, isBold, highlightColor) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          const graphemes = getTextGraphemes(node.textContent || '');
+          for (const grapheme of graphemes) {
+            const range = document.createRange();
+            range.setStart(node, grapheme.start);
+            range.setEnd(node, grapheme.end);
+            const rect = range.getBoundingClientRect();
+            // Caracteres sem largura (p.ex. ZWJ) ainda entram no Canvas, sem criar uma linha falsa.
+            const top = rect.width || rect.height ? rect.top : (currentTop ?? bodyEl.getBoundingClientRect().top);
+            PUSH_CHAR(grapheme.text, isBold, highlightColor, top);
+          }
+          return;
+        }
+        if (node.nodeType !== Node.ELEMENT_NODE) return;
+        const tag = (node.tagName || '').toUpperCase();
+        if (tag === 'BR') {
+          FLUSH();
+          return;
+        }
+        const newBold = isBold || tag === 'STRONG' || tag === 'B';
+        const newHighlight = tag === 'MARK'
+          ? normalizeHighlightColor(node.dataset.highlight)
+          : highlightColor;
+        if (tag === 'DIV' || tag === 'P') {
+          // Quebra de bloco explícita: força flush antes de processar
+          if (currentLine.length > 0 || currentSeg) FLUSH();
+        }
+        for (const child of node.childNodes) walk(child, newBold, newHighlight);
+      }
+      walk(bodyEl, false, null);
+      if (currentSeg) currentLine.push(currentSeg);
+      if (currentLine.length > 0) lines.push(currentLine);
+      return lines;
+    }
+
+    function roundRectPath(ctx, x, y, w, h, r) {
+      if (ctx.roundRect) { ctx.roundRect(x, y, w, h, r); return; }
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
+    }
+
+    function drawMarkerStroke(ctx, x, y, width, fontSize, color) {
+      if (!color || width <= 0) return;
+      // Mesma faixa vertical do preview CSS: cobre o glifo com respiro mínimo,
+      // sem padding que alteraria largura ou quebra de linha.
+      const top = y + fontSize * 0.02;
+      const height = fontSize * 1.04;
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.fillRect(x, top, width, height);
+      ctx.restore();
+    }
+
+    // ─── drawTweet ─────────────────────────────────────────
+    // Aceita `precomputedLines` opcional (lines = [[{text, bold}, ...], ...]).
+    // Quando passada, pula o wrap interno e usa diretamente — garante paridade pixel-perfect
+    // com o DOM .body que produziu essas lines via getLineSegmentsFromDOM().
+    function drawTweet(canvas, { text = '', name = '', handle = '', theme = 'light', fontSize = 42, slideImage, avatar, precomputedLines }) {
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      canvas.width = W; canvas.height = H;
+      // Desliga kerning e ligatures pra alinhar com o CSS do .body
+      if ('fontKerning' in ctx) ctx.fontKerning = 'none';
+      const PAD_X = 90;
+      const dark = theme === 'dark';
+      const markerPalette = HIGHLIGHT_THEME_COLORS[dark ? 'dark' : 'light'];
+      const bg = dark ? '#000000' : '#FFFFFF';
+      const fg = dark ? '#E7E9EA' : '#0F1419';
+      const fgMuted = dark ? '#71767B' : '#536471';
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+      const avatarSize = 120;
+      const hasImg = !!slideImage;
+      const imgPad = 60, imgRadius = 24;
+      const fontFamily = 'Arial, sans-serif';
+      ctx.font = `400 ${fontSize}px ${fontFamily}`;
+      const maxTextWidth = W - PAD_X * 2;
+      // Se temos lines do DOM, usa elas; senão recai pro wrap manual.
+      const lines = precomputedLines || (function() {
+        // Fallback: parse markdown direto + wrap simples (uso restrito a chamadas legadas)
+        const segs = (text || '').split('\n').map(p => {
+          const parts = [];
+          const re = /\*\*([^*]+?)\*\*/g;
+          let last = 0, m;
+          while ((m = re.exec(p)) !== null) {
+            if (m.index > last) parts.push({ text: p.slice(last, m.index), bold: false });
+            parts.push({ text: m[1], bold: true });
+            last = re.lastIndex;
+          }
+          if (last < p.length) parts.push({ text: p.slice(last), bold: false });
+          return parts.length ? parts : [{ text: p, bold: false }];
+        });
+        return segs;
+      })();
+      const lineHeight = fontSize * TWEET_COPY_LINE_HEIGHT;
+      const textBlockH = lines.length * lineHeight;
+      const headerH = avatarSize, gap = 55, imgGapBetween = 40;
+      const actualImgW = W - imgPad * 2;
+      const idealImgH = actualImgW / IMG_RATIO;
+      const maxImgH = hasImg ? Math.min(idealImgH, H * 0.45) : 0;
+      const totalBlockH = headerH + gap + textBlockH + (hasImg ? imgGapBetween + maxImgH : 0);
+      const centeredY = (H - totalBlockH) / 2 + 40;
+      const startY = Math.max(80, centeredY);
+
+      ctx.save(); ctx.beginPath();
+      ctx.arc(PAD_X + avatarSize / 2, startY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+      ctx.closePath(); ctx.clip();
+      if (avatar) {
+        const crop = normalizeAvatarCrop(profileState.avatarCrop);
+        const baseScale = Math.max(avatarSize / avatar.naturalWidth, avatarSize / avatar.naturalHeight);
+        const drawW = avatar.naturalWidth * baseScale * crop.scale;
+        const drawH = avatar.naturalHeight * baseScale * crop.scale;
+        const drawX = PAD_X + (avatarSize - drawW) / 2 + crop.x * avatarSize;
+        const drawY = startY + (avatarSize - drawH) / 2 + crop.y * avatarSize;
+        ctx.drawImage(avatar, drawX, drawY, drawW, drawH);
+      } else {
+        ctx.fillStyle = '#1A1A1A';
+        ctx.fillRect(PAD_X, startY, avatarSize, avatarSize);
+        ctx.font = `bold ${avatarSize * 0.45}px ${fontFamily}`;
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText((name || '?').charAt(0).toUpperCase(), PAD_X + avatarSize / 2, startY + avatarSize / 2 + 2);
+      }
+      ctx.restore();
+
+      const nameX = PAD_X + avatarSize + 28;
+      ctx.font = `bold 40px ${fontFamily}`;
+      ctx.fillStyle = fg; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      ctx.fillText(name, nameX, startY + 22);
+      const nameWidth = ctx.measureText(name).width;
+      const badgeSize = 30;
+      const bx = nameX + nameWidth + 12 + badgeSize / 2;
+      const by = startY + 22 + 20;
+      ctx.save(); ctx.translate(bx, by); ctx.beginPath();
+      const pts = 8;
+      for (let i = 0; i < pts * 2; i++) {
+        const a = (i * Math.PI) / pts - Math.PI / 2;
+        const r = i % 2 === 0 ? badgeSize / 2 : badgeSize / 2 * 0.78;
+        if (i === 0) ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+        else ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+      }
+      ctx.closePath(); ctx.fillStyle = '#1D9BF0'; ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-5, 1); ctx.lineTo(-1.5, 5); ctx.lineTo(6, -4);
+      ctx.strokeStyle = '#FFF'; ctx.lineWidth = 2.8; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke();
+      ctx.restore();
+
+      ctx.font = `32px ${fontFamily}`; ctx.fillStyle = fgMuted;
+      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      ctx.fillText('@' + handle, nameX, startY + 62);
+
+      const textY = startY + headerH + gap;
+      ctx.fillStyle = fg; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      let y = textY;
+      // Bold mesmo tamanho do regular pra paridade com o CSS do .body strong.
+      for (const lineSegments of lines) {
+        if (y + lineHeight > H - 60) break;
+        let x = PAD_X;
+        for (const seg of lineSegments) {
+          ctx.font = `${seg.bold ? '700 ' : '400 '}${fontSize}px ${fontFamily}`;
+          const segmentWidth = ctx.measureText(seg.text).width;
+          const markerColor = seg.highlight ? markerPalette[seg.highlight] : null;
+          drawMarkerStroke(ctx, x, y, segmentWidth, fontSize, markerColor);
+          ctx.fillStyle = dark && seg.highlight ? '#0F1419' : fg;
+          ctx.fillText(seg.text, x, y);
+          x += segmentWidth;
+        }
+        y += lineHeight;
+      }
+
+      if (hasImg) {
+        const actualImgY = startY + headerH + gap + textBlockH + imgGapBetween;
+        const drawImgW = actualImgW, drawImgH = maxImgH;
+        ctx.save(); ctx.beginPath();
+        roundRectPath(ctx, imgPad, actualImgY, drawImgW, drawImgH, imgRadius);
+        ctx.clip();
+        const srcR = slideImage.width / slideImage.height;
+        const dstR = drawImgW / drawImgH;
+        let sx = 0, sy = 0, sw = slideImage.width, sh = slideImage.height;
+        if (srcR > dstR) { sw = slideImage.height * dstR; sx = (slideImage.width - sw) / 2; }
+        else { sh = slideImage.width / dstR; sy = (slideImage.height - sh) / 2; }
+        ctx.drawImage(slideImage, sx, sy, sw, sh, imgPad, actualImgY, drawImgW, drawImgH);
+        ctx.restore();
+      }
+    }
+
+    // Atualiza o DOM .tweet-render (visual primário). Não toca no canvas.
+    // Canvas só é regenerado no exportSlideToCanvas (chamado pelo download/telegram).
+    function renderSlide(i) {
+      const slide = slidesState[i];
+      const renderEl = document.getElementById('render-' + i);
+      if (!renderEl) return;
+      // Atualiza body apenas se o texto mudou externamente (não durante input,
+      // pra não estourar cursor do usuário).
+      const bodyEl = renderEl.querySelector('.body');
+      const expected = markdownToHtml(slide.text || '');
+      if (bodyEl.innerHTML !== expected && document.activeElement !== bodyEl) {
+        bodyEl.innerHTML = expected;
+      }
+      // Foto
+      const photoEl = renderEl.querySelector('.photo');
+      if (slide.imageDataURL) {
+        photoEl.style.backgroundImage = 'url(' + slide.imageDataURL + ')';
+        photoEl.classList.remove('hidden');
+      } else {
+        photoEl.style.backgroundImage = '';
+        photoEl.classList.add('hidden');
+      }
+      // Avatar pode chegar tarde (carrega async). Atualiza src quando disponível.
+      const avatarEl = renderEl.querySelector('.avatar');
+      if (avatarEl && profileState.avatar && avatarEl.src !== profileState.avatar) {
+        avatarEl.src = profileState.avatar;
+      }
+      const nameEl = renderEl.querySelector('.name');
+      if (nameEl) nameEl.textContent = profileState.name;
+      const handleEl = renderEl.querySelector('.handle');
+      if (handleEl) handleEl.textContent = '@' + profileState.handle;
+      // Recalcula posições
+      applyLayout(i);
+      // Flag visual
+      const flag = document.getElementById('flag-' + i);
+      if (flag) flag.style.display = slide.imageDataURL ? 'inline-block' : 'none';
+    }
+
+    // Renderiza o slide no canvas escondido pra export PNG.
+    // Lê quebras de linha REAIS do DOM via Range API → paridade pixel-perfect garantida.
+    function exportSlideToCanvas(i) {
+      const slide = slidesState[i];
+      const canvas = document.getElementById('canvas-' + i);
+      const bodyEl = document.querySelector('#render-' + i + ' .body');
+      if (!canvas || !bodyEl) return null;
+      const precomputedLines = getLineSegmentsFromDOM(bodyEl);
+      const slideImage = slideImageCache.get(i);
+      drawTweet(canvas, {
+        text: slide.text,
+        name: profileState.name,
+        handle: profileState.handle,
+        theme: currentTheme,
+        fontSize: (slide.fontSize || 42) * (Number(bodyEl.dataset.contentFitScale) || 1),
+        slideImage: slideImage,
+        avatar: avatarImg,
+        precomputedLines: precomputedLines
+      });
+      return canvas;
+    }
+
+    function loadSlideImage(i) {
+      const slide = slidesState[i];
+      if (!slide.imageDataURL) { slideImageCache.delete(i); renderSlide(i); return; }
+      const img = new Image();
+      img.onload = () => { slideImageCache.set(i, img); renderSlide(i); };
+      img.onerror = () => { slideImageCache.delete(i); renderSlide(i); };
+      img.src = slide.imageDataURL;
+    }
+
+    function applyTheme() {
+      document.body.classList.toggle('theme-dark', currentTheme === 'dark');
+      const btn = document.getElementById('btn-theme');
+      if (btn) btn.textContent = currentTheme === 'light' ? 'Fundo escuro' : 'Fundo claro';
+      slidesState.forEach((_, i) => renderSlide(i));
+    }
+
+    function toggleTheme() {
+      currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+      safeStorageSet('carrossel-universal-carrossel-theme', currentTheme);
+      applyTheme();
+      recordEditorMutation('theme');
+    }
+
+    // ─── Ratio 4:5 / 3:4 ──────────────────────────────────
+    function updateTweetPreviewScale() {
+      document.querySelectorAll('.tweet-render-wrap').forEach((wrap) => {
+        const render = wrap.querySelector('.tweet-render');
+        if (!render || !wrap.clientWidth) return;
+        const scale = Math.min(0.5, wrap.clientWidth / W);
+        render.style.transform = 'scale(' + scale + ')';
+        wrap.style.height = (H * scale) + 'px';
+      });
+    }
+
+    function applyRatio() {
+      H = RATIO_HEIGHTS[currentRatio] || 1350;
+      document.documentElement.style.setProperty('--tweet-w', W + 'px');
+      document.documentElement.style.setProperty('--tweet-h', H + 'px');
+      document.documentElement.style.setProperty('--tweet-aspect', W + ' / ' + H);
+      // Atualiza estado visual dos botões (highlight no ativo)
+      document.querySelectorAll('[data-ratio]').forEach(btn => {
+        const isActive = btn.dataset.ratio === currentRatio;
+        btn.style.background = isActive ? '#0F1419' : '';
+        btn.style.color = isActive ? '#fff' : '';
+        btn.style.borderColor = isActive ? '#0F1419' : '';
+      });
+      // Atualiza canvas size (export-canvas é regenerado no export, mas mantém atributos)
+      slidesState.forEach((_, i) => {
+        const c = document.getElementById('canvas-' + i);
+        if (c) { c.width = W; c.height = H; }
+      });
+      // Atualiza header info se existir
+      const headerInfo = document.querySelector('.header-info > div');
+      if (headerInfo) {
+        headerInfo.textContent = headerInfo.textContent.replace(/1080×\d+/g, '1080×' + H);
+      }
+      // Re-aplica layout em cada slide (centralização vertical usa H)
+      slidesState.forEach((_, i) => renderSlide(i));
+      updateTweetPreviewScale();
+    }
+    function setRatio(ratio) {
+      if (!RATIO_HEIGHTS[ratio] || ratio === currentRatio) return;
+      currentRatio = ratio;
+      try { localStorage.setItem('carrossel-universal-tweet-ratio', ratio); } catch (e) {}
+      applyRatio();
+      recordEditorMutation('ratio');
+    }
+    window.addEventListener('resize', updateTweetPreviewScale);
+
+    // ─── Captura PNG (usado por Telegram + Instagram) ────────
+    async function captureSlideAsBlob(i) {
+      applyLayout(i);
+      const card = document.querySelectorAll('.slide-card')[i];
+      if (card && card.classList.contains('content-overflow')) {
+        throw new Error('O slide ' + (i + 1) + ' tem conteúdo demais. Reduza o texto ou remova a imagem.');
+      }
+      const canvas = exportSlideToCanvas(i);
+      if (!canvas) throw new Error('Slide ' + (i + 1) + ' não encontrado');
+      return new Promise((resolve, reject) => {
+        canvas.toBlob((blob) => {
+          if (blob) resolve(blob);
+          else reject(new Error('toBlob retornou null no slide ' + (i + 1)));
+        }, 'image/png');
+      });
+    }
+    function blobToB64NoPrefix(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    // ─── Modal Telegram ──────────────────────────────────────
+    let telegramModalReturnFocus = null;
+    async function openTgModal() {
+      telegramModalReturnFocus = document.activeElement;
+      const modal = document.getElementById('tg-modal');
+      modal.classList.add('visible');
+      modal.setAttribute('aria-hidden', 'false');
+      document.getElementById('tg-cancel').focus();
+      const status = document.getElementById('tg-config-status');
+      try {
+        const response = await fetch('/api/telegram/status', { cache: 'no-store' });
+        const payload = await response.json();
+        status.textContent = payload.configured ? '✓ Telegram configurado neste computador.' : 'Telegram ainda não configurado neste computador.';
+      } catch (error) {
+        status.textContent = 'Não foi possível verificar a configuração local.';
+      }
+    }
+    function closeTgModal() {
+      const modal = document.getElementById('tg-modal');
+      modal.classList.remove('visible');
+      modal.setAttribute('aria-hidden', 'true');
+      if (telegramModalReturnFocus && telegramModalReturnFocus.focus) telegramModalReturnFocus.focus();
+    }
+    async function tgTestConnection() {
+      try {
+        const res = await localApiFetch('/api/telegram/test', { method: 'POST' });
+        const json = await res.json();
+        if (!res.ok || !json.ok) throw new Error(json.error || 'configuração inválida');
+        setSendStatus('✓ Telegram configurado e acessível.', 'success');
+      } catch (e) {
+        setSendStatus('✗ ' + e.message, 'error');
+      }
+    }
+
+    // ─── Send to Telegram ───────────────────────────────────
+    async function sendToTelegram() {
+      if (deliveryBusy) return;
+      setDeliveryBusy(true, 'btn-send-tg');
+      const total = slidesState.length;
+      setSendStatus('Capturando ' + total + ' slides…');
+      try {
+        const blobs = [];
+        for (let i = 0; i < total; i++) {
+          setSendStatus('Capturando slide ' + (i + 1) + '/' + total + '…');
+          blobs.push(await captureSlideAsBlob(i));
+        }
+        const images_b64 = await Promise.all(blobs.map(blobToB64NoPrefix));
+        const caption = document.getElementById('ig-caption')?.value || '';
+        const res = await localApiFetch('/api/telegram/send', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ images_b64, caption }),
+        });
+        const json = await res.json();
+        if (!res.ok || !json.ok) throw new Error(json.error || 'Falha no Telegram');
+        setSendStatus('✓ ' + total + ' slides enviados pro Telegram.', 'success');
+      } catch (e) {
+        console.error('[sendToTelegram]', e);
+        setSendStatus('✗ ' + (e.message || e), 'error');
+      } finally {
+        setDeliveryBusy(false, 'btn-send-tg');
+      }
+    }
+
+    // ─── Publish Instagram (via /api/publicar-instagram do serve_carrossel) ────
+    async function publishInstagram() {
+      if (deliveryBusy) return;
+      const captionEl = document.getElementById('ig-caption');
+      const caption = captionEl ? captionEl.value.trim() : '';
+      if (!caption) {
+        setSendStatus('✗ Caption vazia. Preenche acima antes de publicar.', 'error');
+        return;
+      }
+      const total = slidesState.length;
+      if (total < 2 || total > 10) {
+        setSendStatus('✗ Carrossel exige 2-10 slides. Atual: ' + total, 'error');
+        return;
+      }
+      const confirmMsg = 'Publicar AGORA no @seuperfil?\n\n' + total + ' slides + caption (' + caption.length + ' chars).\n\nIrreversível. Continuar?';
+      if (!confirm(confirmMsg)) return;
+      setDeliveryBusy(true, 'btn-publish-ig');
+      setSendStatus('Capturando ' + total + ' slides…');
+      try {
+        const blobs = [];
+        for (let i = 0; i < total; i++) {
+          setSendStatus('Capturando slide ' + (i + 1) + '/' + total + '…');
+          blobs.push(await captureSlideAsBlob(i));
+        }
+        setSendStatus('Enviando pra Meta API… (pode levar 30-60s)');
+        const slides_b64 = await Promise.all(blobs.map(blobToB64NoPrefix));
+        const r = await localApiFetch('/api/publicar-instagram', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ slides_b64, caption, title: 'Tweet Editor' }),
+        });
+        const data = await r.json();
+        if (data.ok) {
+          setSendStatus('✅ Publicado @seuperfil! Post ID: ' + data.post_id, 'success');
+          alert('Publicado com sucesso!\n\nPost ID: ' + data.post_id);
+        } else {
+          const errMsg = data.error || 'desconhecido';
+          const detail = data.stderr ? '\n\n' + data.stderr.slice(-500) : '';
+          setSendStatus('✗ Erro: ' + errMsg, 'error');
+          alert('Erro ao publicar:\n\n' + errMsg + detail);
+        }
+      } catch (e) {
+        console.error('[publishInstagram]', e);
+        setSendStatus('✗ ' + (e.message || e), 'error');
+      } finally {
+        setDeliveryBusy(false, 'btn-publish-ig');
+      }
+    }
+
+    // ─── Caption persistência local ──────────────────────────
+    function loadCaptionFromStorage() {
+      const captionEl = document.getElementById('ig-caption');
+      if (!captionEl) return;
+      const saved = safeStorageGet(STORAGE_KEY + '-caption');
+      if (saved !== null && saved !== undefined) captionEl.value = saved;
+      captionEl.addEventListener('input', () => {
+        safeStorageSet(STORAGE_KEY + '-caption', captionEl.value);
+        recordEditorMutation('caption');
+      });
+    }
+
+    const imageCommitRevisions = new Map();
+    const tweetImageComposer = { targetSlide: null, leftDataURL: null, rightDataURL: null, mode: 'single', activeSlot: 'left' };
+
+    function readImageBlobAsDataURL(blob) {
+      return new Promise((resolve, reject) => {
+        if (!blob || !blob.type || !blob.type.startsWith('image/')) {
+          reject(new Error('Arquivo não é uma imagem.'));
+          return;
+        }
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('Não foi possível ler esta imagem.'));
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    function drawCoverImage(context, image, x, y, width, height) {
+      const sourceRatio = image.naturalWidth / image.naturalHeight;
+      const targetRatio = width / height;
+      let sx = 0, sy = 0, sw = image.naturalWidth, sh = image.naturalHeight;
+      if (sourceRatio > targetRatio) {
+        sw = image.naturalHeight * targetRatio;
+        sx = (image.naturalWidth - sw) / 2;
+      } else {
+        sh = image.naturalWidth / targetRatio;
+        sy = (image.naturalHeight - sh) / 2;
+      }
+      context.drawImage(image, sx, sy, sw, sh, x, y, width, height);
+    }
+
+    function loadComposerImage(dataURL) {
+      return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = () => reject(new Error('Não foi possível carregar uma das fotos.'));
+        image.src = dataURL;
+      });
+    }
+
+    async function composeSplitImage(leftDataURL, rightDataURL) {
+      const [left, right] = await Promise.all([loadComposerImage(leftDataURL), loadComposerImage(rightDataURL)]);
+      if (!left || !right) throw new Error('Não foi possível carregar uma das fotos.');
+      const canvas = document.createElement('canvas');
+      canvas.width = 1600; canvas.height = 900;
+      const context = canvas.getContext('2d');
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = 'high';
+      drawCoverImage(context, left, 0, 0, 800, 900);
+      drawCoverImage(context, right, 800, 0, 800, 900);
+      return canvas.toDataURL('image/jpeg', 0.92);
+    }
+
+    function renderTweetImageComposer() {
+      const state = tweetImageComposer;
+      const modal = document.getElementById('tweet-image-composer-modal');
+      const needsTwo = state.mode === 'split';
+      [['left', state.leftDataURL], ['right', state.rightDataURL]].forEach(([side, dataURL]) => {
+        const slot = document.getElementById('tweet-image-slot-' + side);
+        const preview = document.getElementById('tweet-image-preview-' + side);
+        if (!slot || !preview) return;
+        slot.classList.toggle('has-image', !!dataURL);
+        if (dataURL) preview.src = dataURL;
+        else preview.removeAttribute('src');
+        if (side === 'right') slot.hidden = !needsTwo;
+      });
+      modal.querySelectorAll('[data-image-composer-mode]').forEach(button => button.classList.toggle('is-active', button.dataset.imageComposerMode === state.mode));
+      document.getElementById('tweet-image-composer-swap').hidden = !needsTwo || !state.leftDataURL || !state.rightDataURL;
+      document.getElementById('tweet-image-composer-help').textContent = needsTwo
+        ? (!state.leftDataURL ? 'Adicione ou cole a primeira foto. Depois, faça o mesmo na segunda metade.' : !state.rightDataURL ? 'Agora adicione ou cole a segunda foto. Ctrl+V entra diretamente neste quadro.' : 'Cada foto ocupa metade do quadro, com recorte central automático.')
+        : 'Adicione uma foto ou pressione Ctrl+V para colar a imagem que entrará no slide.';
+      document.getElementById('tweet-image-composer-apply').disabled = !state.leftDataURL || (needsTwo && !state.rightDataURL);
+    }
+
+    function closeTweetImageComposer() {
+      const modal = document.getElementById('tweet-image-composer-modal');
+      modal.classList.remove('visible');
+      modal.setAttribute('aria-hidden', 'true');
+      tweetImageComposer.targetSlide = null;
+      tweetImageComposer.leftDataURL = null;
+      tweetImageComposer.rightDataURL = null;
+      tweetImageComposer.mode = 'single';
+      tweetImageComposer.activeSlot = 'left';
+    }
+
+    async function openTweetImageComposer(index, initialBlob = null) {
+      const targetSlide = slidesState[index];
+      if (!targetSlide) return;
+      tweetImageComposer.targetSlide = targetSlide;
+      tweetImageComposer.leftDataURL = null;
+      tweetImageComposer.rightDataURL = null;
+      tweetImageComposer.mode = 'single';
+      tweetImageComposer.activeSlot = 'left';
+      const modal = document.getElementById('tweet-image-composer-modal');
+      modal.classList.add('visible');
+      modal.setAttribute('aria-hidden', 'false');
+      renderTweetImageComposer();
+      modal.querySelector('.modal').focus();
+      if (!initialBlob) return;
+      try {
+        tweetImageComposer.leftDataURL = await readImageBlobAsDataURL(initialBlob);
+        if (tweetImageComposer.targetSlide !== targetSlide) return;
+        renderTweetImageComposer();
+      } catch (error) {
+        setSendStatus('✗ ' + (error.message || error), 'error');
+      }
+    }
+
+    async function setTweetImageComposerSlot(side, file) {
+      try {
+        tweetImageComposer[side + 'DataURL'] = await readImageBlobAsDataURL(file);
+        renderTweetImageComposer();
+      } catch (error) {
+        setSendStatus('✗ ' + (error.message || error), 'error');
+      }
+    }
+
+    async function applyTweetImageComposer() {
+      const { targetSlide, leftDataURL, rightDataURL, mode } = tweetImageComposer;
+      const index = slidesState.indexOf(targetSlide);
+      if (index < 0 || !leftDataURL || (mode === 'split' && !rightDataURL)) return;
+      const applyButton = document.getElementById('tweet-image-composer-apply');
+      applyButton.disabled = true;
+      applyButton.textContent = 'Preparando…';
+      try {
+        const dataURL = mode === 'split' ? await composeSplitImage(leftDataURL, rightDataURL) : leftDataURL;
+        if (slidesState.indexOf(targetSlide) !== index) return;
+        const committed = await commitTweetImageDataURL(index, dataURL, targetSlide);
+        if (!committed) throw new Error('O slide mudou antes que a imagem fosse aplicada. Tente novamente.');
+        closeTweetImageComposer();
+      } catch (error) {
+        setSendStatus('✗ ' + (error.message || error), 'error');
+      } finally {
+        applyButton.textContent = 'Usar imagem';
+        if (document.getElementById('tweet-image-composer-modal').classList.contains('visible')) renderTweetImageComposer();
+      }
+    }
+
+    function setupTweetImageComposer() {
+      const modal = document.getElementById('tweet-image-composer-modal');
+      modal.querySelectorAll('[data-image-composer-mode]').forEach(button => button.addEventListener('click', () => {
+        tweetImageComposer.mode = button.dataset.imageComposerMode;
+        renderTweetImageComposer();
+      }));
+      ['left', 'right'].forEach(side => document.getElementById('tweet-image-file-' + side).addEventListener('change', event => {
+        const file = event.target.files && event.target.files[0];
+        event.target.value = '';
+        if (file) setTweetImageComposerSlot(side, file);
+      }));
+      ['left', 'right'].forEach(side => document.getElementById('tweet-image-slot-' + side).addEventListener('mousedown', () => {
+        tweetImageComposer.activeSlot = side;
+      }));
+      document.addEventListener('paste', event => {
+        if (!modal.classList.contains('visible')) return;
+        const imageItem = Array.from((event.clipboardData || window.clipboardData)?.items || []).find(item => item.type && item.type.startsWith('image/'));
+        if (!imageItem) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const side = tweetImageComposer.mode === 'split' && (tweetImageComposer.activeSlot === 'right' || (tweetImageComposer.leftDataURL && !tweetImageComposer.rightDataURL)) ? 'right' : 'left';
+        tweetImageComposer.activeSlot = side;
+        setTweetImageComposerSlot(side, imageItem.getAsFile());
+      }, true);
+      document.getElementById('tweet-image-composer-swap').addEventListener('click', () => {
+        [tweetImageComposer.leftDataURL, tweetImageComposer.rightDataURL] = [tweetImageComposer.rightDataURL, tweetImageComposer.leftDataURL];
+        renderTweetImageComposer();
+      });
+      document.getElementById('tweet-image-composer-cancel').addEventListener('click', closeTweetImageComposer);
+      document.getElementById('tweet-image-composer-apply').addEventListener('click', applyTweetImageComposer);
+      modal.addEventListener('mousedown', event => { if (event.target === modal) closeTweetImageComposer(); });
+    }
+
+    function normalizeSlideImage(dataURL) {
+      return new Promise((resolve) => {
+        const image = new Image();
+        image.onload = () => {
+          const maxDimension = 1600;
+          const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+          canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+          const context = canvas.getContext('2d');
+          context.drawImage(image, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/webp', 0.88));
+        };
+        image.onerror = () => resolve(dataURL);
+        image.src = dataURL;
+      });
+    }
+
+    function commitTweetImageDataURL(i, dataURL, targetSlide = slidesState[i]) {
+      const revisionKey = targetSlide || i;
+      const revision = (imageCommitRevisions.get(revisionKey) || 0) + 1;
+      imageCommitRevisions.set(revisionKey, revision);
+      return normalizeSlideImage(dataURL).then(async (normalized) => {
+        const targetIndex = targetSlide ? slidesState.indexOf(targetSlide) : i;
+        if (imageCommitRevisions.get(revisionKey) !== revision || targetIndex < 0) return false;
+        targetSlide.imageDataURL = normalized;
+        delete targetSlide[STORED_IMAGE_REF_KEY];
+        // A foto só é considerada persistida depois de entrar no IndexedDB.
+        await queueTweetImageStorage(targetSlide);
+        if (imageCommitRevisions.get(revisionKey) !== revision || !slidesState.includes(targetSlide)) return false;
+        loadSlideImage(targetIndex);
+        await saveState();
+        flashSlide(targetIndex);
+        return true;
+      });
+    }
+
+    function acceptImageBlob(blob, i) {
+      if (!blob) return;
+      openTweetImageComposer(i, blob);
+    }
+
+    function flashSlide(i) {
+      const cards = document.querySelectorAll('.slide-card');
+      const card = cards[i];
+      if (!card) return;
+      card.classList.add('flash');
+      setTimeout(() => card.classList.remove('flash'), 600);
+    }
+
+    function setActiveSlide(i) {
+      activeSlideIndex = i;
+      const cards = document.querySelectorAll('.slide-card');
+      cards.forEach((c, idx) => c.classList.toggle('is-active', idx === i));
+      setRailActive(i);
+    }
+
+    function setRailActive(index) {
+      document.querySelectorAll('[data-rail-index]').forEach((item) => {
+        const isActive = Number(item.getAttribute('data-rail-index')) === index;
+        item.classList.toggle('is-active', isActive);
+        if (isActive) item.setAttribute('aria-current', 'true');
+        else item.removeAttribute('aria-current');
+      });
+    }
+
+    let tweetRailDragIndex = null;
+
+    function moveTweetSlide(fromIndex, targetIndex, placeAfter) {
+      flushDOMToState();
+      if (!Number.isInteger(fromIndex) || !Number.isInteger(targetIndex)) return;
+      let insertAt = targetIndex + (placeAfter ? 1 : 0);
+      const [moved] = slidesState.splice(fromIndex, 1);
+      if (!moved) return;
+      if (fromIndex < insertAt) insertAt -= 1;
+      insertAt = Math.max(0, Math.min(insertAt, slidesState.length));
+      if (insertAt === fromIndex) {
+        slidesState.splice(fromIndex, 0, moved);
+        return;
+      }
+      slidesState.splice(insertAt, 0, moved);
+      // Cache e operações assíncronas usam índices; invalidá-los evita que a
+      // imagem de outro slide apareça após a mudança de ordem.
+      slideImageCache.clear();
+      imageCommitRevisions.clear();
+      saveState();
+      refreshTweetAfterStructureChange(insertAt);
+    }
+
+    function buildSlideRail() {
+      const list = document.getElementById('slide-rail-list');
+      if (!list) return;
+      list.innerHTML = '';
+      slidesState.forEach((slide, index) => {
+        const rawLabel = String(slide.label || '');
+        const role = slide.isCapa || rawLabel.toLowerCase().includes('capa')
+          ? 'Capa'
+          : slide.isCTA || rawLabel.toLowerCase().includes('cta') ? 'CTA' : 'Slide';
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'rail-item';
+        item.draggable = true;
+        item.setAttribute('data-rail-index', String(index));
+        item.setAttribute('aria-label', 'Ir para slide ' + (index + 1) + ', ' + role);
+        item.title = 'Arraste para reposicionar este slide';
+        item.innerHTML = '<span class="rail-index">' + String(index + 1).padStart(2, '0') + '</span>' +
+          '<span class="rail-role">' + role + '</span>';
+        item.addEventListener('click', () => {
+          setActiveSlide(index);
+          const card = document.querySelectorAll('.slide-card')[index];
+          if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+        item.addEventListener('dragstart', (event) => {
+          tweetRailDragIndex = index;
+          item.classList.add('is-dragging');
+          event.dataTransfer.effectAllowed = 'move';
+          event.dataTransfer.setData('text/plain', String(index));
+        });
+        item.addEventListener('dragend', () => {
+          tweetRailDragIndex = null;
+          document.querySelectorAll('.rail-item').forEach(node => {
+            node.classList.remove('is-dragging', 'drop-before', 'drop-after');
+          });
+        });
+        item.addEventListener('dragover', (event) => {
+          if (tweetRailDragIndex === null || tweetRailDragIndex === index) return;
+          event.preventDefault();
+          const rect = item.getBoundingClientRect();
+          const placeAfter = event.clientY > rect.top + rect.height / 2;
+          item.classList.toggle('drop-before', !placeAfter);
+          item.classList.toggle('drop-after', placeAfter);
+          event.dataTransfer.dropEffect = 'move';
+        });
+        item.addEventListener('dragleave', (event) => {
+          if (!item.contains(event.relatedTarget)) item.classList.remove('drop-before', 'drop-after');
+        });
+        item.addEventListener('drop', (event) => {
+          if (tweetRailDragIndex === null) return;
+          event.preventDefault();
+          const rect = item.getBoundingClientRect();
+          moveTweetSlide(tweetRailDragIndex, index, event.clientY > rect.top + rect.height / 2);
+        });
+        list.appendChild(item);
+      });
+      setRailActive(typeof activeSlideIndex === 'number' ? activeSlideIndex : 0);
+    }
+
+    async function pasteFromClipboard(i) {
+      try {
+        if (!navigator.clipboard || !navigator.clipboard.read) {
+          setSendStatus('Clipboard API indisponível. Use Cmd+V no slide selecionado.', 'error');
+          return;
+        }
+        const items = await navigator.clipboard.read();
+        for (const item of items) {
+          for (const type of item.types) {
+            if (type.startsWith('image/')) {
+              const blob = await item.getType(type);
+              acceptImageBlob(blob, i);
+              return;
+            }
+          }
+        }
+        setSendStatus('Nenhuma imagem no clipboard', 'error');
+      } catch (e) {
+        setSendStatus('Não consegui ler clipboard: ' + e.message + ' · use Cmd+V no slide ativo', 'error');
+      }
+    }
+
+    function setupSlideDragDrop(card, i) {
+      ['dragenter','dragover'].forEach(evt => card.addEventListener(evt, e => {
+        if (!e.dataTransfer.types.includes('Files')) return;
+        e.preventDefault();
+        card.classList.add('drag-over');
+      }));
+      ['dragleave','dragend'].forEach(evt => card.addEventListener(evt, () => {
+        card.classList.remove('drag-over');
+      }));
+      card.addEventListener('drop', e => {
+        e.preventDefault();
+        card.classList.remove('drag-over');
+        const file = e.dataTransfer.files[0];
+        if (file) acceptImageBlob(file, i);
+      });
+    }
+
+    // SVG do selo verificado (azul) — mesmo formato do desenhado no Canvas.
+    const VERIFIED_SVG = '<svg class="verified" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+      '<path fill="#1D9BF0" d="M12 2 l2 2 2.8-.4 1 2.6 2.6 1-.4 2.8 2 2-2 2 .4 2.8-2.6 1-1 2.6L14 20l-2 2-2-2-2.8.4-1-2.6-2.6-1 .4-2.8-2-2 2-2-.4-2.8 2.6-1 1-2.6L10 4z"/>' +
+      '<path fill="none" stroke="#FFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M8 12.5l2.6 2.6L16 9.6"/>' +
+      '</svg>';
+
+    function buildUI() {
+      const wrap = document.getElementById('wrap');
+      wrap.innerHTML = '';
+      slidesState.forEach((slide, i) => {
+        const card = document.createElement('div');
+        card.className = 'slide-card';
+        card.dataset.slideIdx = i;
+
+        // Label superior
+        const label = document.createElement('div');
+        label.className = 'slide-label';
+        label.innerHTML = '<span>slide ' + escapeHtml(slide.label || ('Slide ' + (i + 1))) +
+          '</span><span class="has-img-flag" id="flag-' + i + '" style="display:none">com imagem</span>';
+        card.appendChild(label);
+
+        // DOM-REAL: cartão tweet 1080×1440 escalado 0.5 pra caber na tela
+        const renderWrap = document.createElement('div');
+        renderWrap.className = 'tweet-render-wrap';
+        const render = document.createElement('div');
+        render.className = 'tweet-render';
+        render.id = 'render-' + i;
+
+        // Header (avatar + nome + selo + handle) — mesmo conteúdo do drawTweet header
+        const header = document.createElement('div');
+        header.className = 'header';
+        const avatarSrc = profileState.avatar || '';
+        header.innerHTML =
+          '<div class="avatar-frame"><img class="avatar" alt="Foto de perfil" src="' + avatarSrc + '"></div>' +
+          '<div class="name-block">' +
+            '<div class="name-row">' +
+              '<span class="name">' + escapeHtml(profileState.name) + '</span>' +
+              VERIFIED_SVG +
+            '</div>' +
+            '<div class="handle">' + escapeHtml('@' + profileState.handle) + '</div>' +
+          '</div>';
+        render.appendChild(header);
+
+        // Body contenteditable
+        const body = document.createElement('div');
+        body.className = 'body';
+        body.contentEditable = 'true';
+        body.spellcheck = false;
+        body.id = 'body-' + i;
+        body.innerHTML = markdownToHtml(slide.text || '');
+        // Listener input: extrai markdown do DOM e persiste
+        body.addEventListener('input', () => {
+          const md = htmlToMarkdown(body.innerHTML);
+          slidesState[i].text = md;
+          saveState();
+          // Re-aplica layout (Y do header/body/photo) por causa de mudança de altura do texto
+          applyLayout(i);
+        });
+        body.addEventListener('focus', () => setActiveSlide(i));
+        // Cmd/Ctrl+B aplica bold via execCommand
+        body.addEventListener('keydown', (e) => {
+          if ((e.metaKey || e.ctrlKey) && (e.key === 'b' || e.key === 'B')) {
+            e.preventDefault();
+            document.execCommand('bold', false, null);
+            const md = htmlToMarkdown(body.innerHTML);
+            slidesState[i].text = md;
+            saveState();
+            applyLayout(i);
+          }
+        });
+        // Paste: converte texto plain (preserva markdown **bold**) e ignora HTML rico/colado
+        body.addEventListener('paste', (e) => {
+          // Imagem no clipboard cai pro pasteFromClipboard padrão
+          const items = e.clipboardData && e.clipboardData.items;
+          if (items) {
+            for (const item of items) {
+              if (item.type && item.type.startsWith('image/')) {
+                e.preventDefault();
+                e.stopPropagation();
+                acceptImageBlob(item.getAsFile(), i);
+                return;
+              }
+            }
+          }
+          e.preventDefault();
+          e.stopPropagation();
+          const txt = (e.clipboardData || window.clipboardData).getData('text/plain') || '';
+          // Insere convertendo **X** em <strong>
+          const fragHtml = markdownToHtml(txt);
+          document.execCommand('insertHTML', false, fragHtml);
+        });
+        render.appendChild(body);
+
+        // Foto opcional
+        const photo = document.createElement('div');
+        photo.className = 'photo hidden';
+        photo.id = 'photo-' + i;
+        render.appendChild(photo);
+
+        // Canvas escondido pra export
+        const canvas = document.createElement('canvas');
+        canvas.id = 'canvas-' + i;
+        canvas.className = 'export-canvas';
+        canvas.width = W; canvas.height = H;
+        render.appendChild(canvas);
+
+        renderWrap.appendChild(render);
+        card.appendChild(renderWrap);
+
+        // Controles abaixo do tweet (sem textarea agora)
+        const controls = document.createElement('div');
+        controls.className = 'slide-controls';
+
+        const fontSizeControl = document.createElement('div');
+        fontSizeControl.className = 'slide-font-size-control';
+        const fontSizeLabel = document.createElement('label');
+        fontSizeLabel.htmlFor = 'slide-font-size-' + i;
+        fontSizeLabel.textContent = 'Tamanho da copy';
+        const fontSizeInput = document.createElement('input');
+        fontSizeInput.id = 'slide-font-size-' + i;
+        fontSizeInput.type = 'range';
+        fontSizeInput.min = String(TWEET_FONT_SIZE_MIN);
+        fontSizeInput.max = String(TWEET_FONT_SIZE_MAX);
+        fontSizeInput.step = '1';
+        fontSizeInput.value = String(slide.fontSize || currentTweetFontSize);
+        fontSizeInput.setAttribute('aria-label', 'Tamanho da copy do slide ' + (i + 1));
+        fontSizeInput.setAttribute('data-slide-font-size', String(i));
+        fontSizeInput.setAttribute('data-slide-font-size-output', 'slide-font-size-value-' + i);
+        const fontSizeOutput = document.createElement('output');
+        fontSizeOutput.id = 'slide-font-size-value-' + i;
+        fontSizeOutput.htmlFor = fontSizeInput.id;
+        fontSizeOutput.value = fontSizeInput.value + ' px';
+        fontSizeInput.addEventListener('input', () => setSlideTweetFontSize(i, fontSizeInput.value, { persist: false, record: false }));
+        fontSizeInput.addEventListener('change', () => setSlideTweetFontSize(i, fontSizeInput.value, { persist: true, record: true }));
+        fontSizeControl.append(fontSizeLabel, fontSizeInput, fontSizeOutput);
+        controls.appendChild(fontSizeControl);
+
+        const actions = document.createElement('div');
+        actions.className = 'slide-actions';
+
+        const boldBtn = document.createElement('button');
+        boldBtn.className = 'btn';
+        boldBtn.innerHTML = '<b>B</b>&nbsp;Negrito';
+        boldBtn.title = 'Cmd/Ctrl + B';
+        boldBtn.addEventListener('click', () => {
+          body.focus();
+          document.execCommand('bold', false, null);
+          const md = htmlToMarkdown(body.innerHTML);
+          slidesState[i].text = md;
+          saveState();
+          applyLayout(i);
+        });
+        actions.appendChild(boldBtn);
+
+        const uploadLabel = document.createElement('label');
+        uploadLabel.className = 'btn';
+        uploadLabel.innerHTML = '+ Adicionar imagem';
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file'; fileInput.accept = 'image/*';
+        fileInput.addEventListener('change', (ev) => {
+          const file = ev.target.files[0];
+          if (!file) return;
+          acceptImageBlob(file, i);
+          ev.target.value = '';
+        });
+        uploadLabel.appendChild(fileInput);
+        actions.appendChild(uploadLabel);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'btn danger';
+        removeBtn.textContent = 'Remover imagem';
+        removeBtn.addEventListener('click', () => {
+          const targetSlide = slidesState[i];
+          imageCommitRevisions.set(targetSlide, (imageCommitRevisions.get(targetSlide) || 0) + 1);
+          targetSlide.imageDataURL = null;
+          delete targetSlide[STORED_IMAGE_REF_KEY];
+          slideImageCache.delete(i);
+          renderSlide(i); saveState();
+        });
+        actions.appendChild(removeBtn);
+
+        const downloadBtn = document.createElement('button');
+        downloadBtn.className = 'btn primary';
+        downloadBtn.textContent = 'Baixar este slide';
+        downloadBtn.addEventListener('click', () => downloadSlide(i));
+        actions.appendChild(downloadBtn);
+
+        const pasteBtn = document.createElement('button');
+        pasteBtn.className = 'btn';
+        pasteBtn.textContent = 'Colar imagem (⌘V)';
+        pasteBtn.addEventListener('click', () => pasteFromClipboard(i));
+        actions.appendChild(pasteBtn);
+
+        controls.appendChild(actions);
+        card.appendChild(controls);
+        card.addEventListener('click', (e) => {
+          if (!e.target.closest('.body')) setActiveSlide(i);
+        });
+        setupSlideDragDrop(card, i);
+        wrap.appendChild(card);
+      });
+      buildSlideRail();
+      setActiveSlide(typeof activeSlideIndex === 'number' ? activeSlideIndex : 0);
+    }
+
+    // Recalcula Y do header/body/photo replicando exatamente o cálculo do drawTweet.
+    // Chamado em renderSlide e após edição do body.
+    function applyLayout(i) {
+      const renderEl = document.getElementById('render-' + i);
+      if (!renderEl) return;
+      const headerEl = renderEl.querySelector('.header');
+      const bodyEl = renderEl.querySelector('.body');
+      const photoEl = renderEl.querySelector('.photo');
+      const slide = slidesState[i];
+      const fontSize = slide.fontSize || 42;
+      const hasImg = !!slide.imageDataURL;
+      const headerH = 120, gap = 55, imgGapBetween = 40;
+      const maxImgH = Math.min(960 / IMG_RATIO, H * 0.45); // = 540 com IMG_RATIO 16/9
+      // Ajusta somente a tipografia quando a pilha precisa de mais altura.
+      // A largura continua nos mesmos 900px, evitando colunas estreitas.
+      const availableStackHeight = H - 140;
+      const measureAt = (fit) => {
+        const effectiveSize = fontSize * fit;
+        bodyEl.style.fontSize = effectiveSize + 'px';
+        bodyEl.style.lineHeight = (effectiveSize * TWEET_COPY_LINE_HEIGHT) + 'px';
+        return headerH + gap + bodyEl.scrollHeight + (hasImg ? imgGapBetween + maxImgH : 0);
+      };
+      let contentFit = 1;
+      if (measureAt(1) > availableStackHeight) {
+        let low = 0.55, high = 1;
+        for (let iteration = 0; iteration < 9; iteration++) {
+          const candidate = (low + high) / 2;
+          if (measureAt(candidate) <= availableStackHeight) low = candidate;
+          else high = candidate;
+        }
+        contentFit = low;
+      }
+      const fittedHeight = measureAt(contentFit);
+      bodyEl.dataset.contentFitScale = String(contentFit);
+      const card = renderEl.closest('.slide-card');
+      if (card) {
+        card.classList.toggle('content-auto-fitted', contentFit < 0.999);
+        card.classList.toggle('content-overflow', fittedHeight > availableStackHeight + 1);
+      }
+      // Mede altura real do body com o fit efetivo.
+      const textBlockH = bodyEl.scrollHeight;
+      const totalBlockH = headerH + gap + textBlockH + (hasImg ? imgGapBetween + maxImgH : 0);
+      const centeredY = (H - totalBlockH) / 2 + 40;
+      const startY = Math.max(80, centeredY);
+      headerEl.style.top = startY + 'px';
+      bodyEl.style.top = (startY + headerH + gap) + 'px';
+      if (hasImg) {
+        photoEl.style.top = (startY + headerH + gap + textBlockH + imgGapBetween) + 'px';
+        photoEl.style.height = maxImgH + 'px';
+      }
+    }
+
+    function downloadSlide(i) {
+      // Re-renderiza canvas a partir do DOM atual (paridade garantida via Range API)
+      applyLayout(i);
+      const card = document.querySelectorAll('.slide-card')[i];
+      if (card && card.classList.contains('content-overflow')) {
+        setSendStatus('O slide ' + (i + 1) + ' tem conteúdo demais. Reduza o texto ou remova a imagem.', 'error');
+        return false;
+      }
+      const canvas = exportSlideToCanvas(i);
+      if (!canvas) return false;
+      const url = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `slide-${String(i + 1).padStart(2, '0')}.png`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setSendStatus('✓ Slide ' + (i + 1) + ' baixado em PNG.', 'success');
+      return true;
+    }
+
+    function downloadCurrentTweetSlide() {
+      const index = typeof activeSlideIndex === 'number' ? activeSlideIndex : 0;
+      if (!slidesState[index]) {
+        setSendStatus('Selecione um slide antes de exportar.', 'error');
+        return;
+      }
+      downloadSlide(index);
+    }
+
+    async function downloadAll() {
+      if (deliveryBusy) return;
+      const total = slidesState.length;
+      for (let i = 0; i < slidesState.length; i++) {
+        applyLayout(i);
+        const card = document.querySelectorAll('.slide-card')[i];
+        if (card && card.classList.contains('content-overflow')) {
+          setSendStatus('O slide ' + (i + 1) + ' tem conteúdo demais. Corrija antes de exportar.', 'error');
+          return;
+        }
+      }
+      setDeliveryBusy(true, 'btn-download-all');
+      try {
+        const blobs = [];
+        for (let i = 0; i < total; i++) {
+          setSendStatus('Capturando slide ' + (i + 1) + '/' + total + '…');
+          blobs.push(await captureSlideAsBlob(i));
+        }
+        setSendStatus('Preparando ZIP com ' + total + ' PNGs…');
+        const res = await localApiFetch('/api/export/pngs', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ images_b64: await Promise.all(blobs.map(blobToB64NoPrefix)) }),
+        });
+        if (!res.ok) {
+          const error = await res.json().catch(() => ({}));
+          throw new Error(error.error || 'Falha ao preparar o ZIP');
+        }
+        const zip = await res.blob();
+        const url = URL.createObjectURL(zip);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'carrossel-pngs.zip';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        setSendStatus('✓ ' + total + ' PNGs baixados em um ZIP.', 'success');
+      } catch (e) {
+        console.error('[downloadAll]', e);
+        setSendStatus('✗ ' + (e.message || e), 'error');
+      } finally {
+        setDeliveryBusy(false, 'btn-download-all');
+      }
+    }
+
+    function resetTexts() {
+      if (!confirm('Restaurar todos os textos originais? Imagens permanecem.')) return;
+      slidesState.forEach((s, i) => {
+        const original = ORIGINAL_SLIDES[i];
+        s.text = original ? original.text : 'adicione aqui a sua copy';
+      });
+      saveState(); buildUI();
+      slidesState.forEach((_, i) => { loadSlideImage(i); renderSlide(i); });
+    }
+
+    function createBlankTweetSlides() {
+      return ORIGINAL_SLIDES.map((slide, index) => ({
+        label: slide.label || (index === 0 ? 'Capa' : 'Slide ' + (index + 1)),
+        text: 'adicione aqui a sua copy',
+        fontSize: currentTweetFontSize,
+        imageDataURL: null,
+        isCTA: /\bcta\b/i.test(String(slide.label || '')),
+        isCapa: index === 0 || /\bcapa\b/i.test(String(slide.label || ''))
+      }));
+    }
+
+    async function restartCarousel() {
+      const confirmation = 'Você quer reiniciar esse template e começar outro do zero? Se sim, certifique-se de ter exportado os slides antes';
+      if (!confirm(confirmation)) return;
+      pushCurrentUndoSnapshot();
+      slidesState = createBlankTweetSlides();
+      await persistTweetSlidesState();
+      safeStorageSet(STORAGE_KEY + '-caption', '');
+      location.reload();
+    }
+
+    // OSNL Design: removido openTgModal, closeTgModal, tgTestConnection, tgSave e sendToTelegram.
+    // Editor standalone só pra design + export PNG local via downloadAll.
+
+    // ─── Boot ──────────────────────────────────────────────
+    // Paste global (Cmd+V) cola imagem no slide ativo
+    const HUB_SESSION = {{HUB_SESSION}};
+    const HUB_SESSION_ID = '{{HUB_SESSION_ID}}';
+
+    function configureHubSession() {
+      if (!HUB_SESSION) return;
+      const backButton = document.getElementById('btn-back-hub');
+      const publishButton = document.getElementById('btn-publish-ig');
+      backButton.hidden = false;
+      publishButton.hidden = true;
+      backButton.addEventListener('click', returnToHub);
+    }
+
+    function clearHubSessionStorage() {
+      for (const storage of [localStorage, sessionStorage]) {
+        for (let i = storage.length - 1; i >= 0; i--) {
+          const key = storage.key(i);
+          if (key === STORAGE_KEY || key?.startsWith(STORAGE_KEY + '-')) storage.removeItem(key);
+        }
+      }
+    }
+
+    async function returnToHub() {
+      if (!window.confirm('Descartar esta criação e voltar aos modelos?')) return;
+      try {
+        const response = await localApiFetch('/api/sessoes/' + encodeURIComponent(HUB_SESSION_ID), { method: 'DELETE' });
+        if (!response.ok) throw new Error('Não foi possível descartar esta criação.');
+        clearHubSessionStorage();
+        window.location.replace('/');
+      } catch (error) {
+        setSendStatus('✗ ' + error.message, 'error');
+      }
+    }
+
+    document.addEventListener('paste', (e) => {
+      if (e.defaultPrevented) return;
+      const items = e.clipboardData && e.clipboardData.items;
+      if (!items) return;
+      let imageItem = null;
+      for (const item of items) {
+        if (item.type && item.type.startsWith('image/')) {
+          imageItem = item;
+          break;
+        }
+      }
+      if (!imageItem) return;
+      if (activeSlideIndex === null) {
+        e.preventDefault();
+        setSendStatus('Clique num slide primeiro, depois Cmd+V', 'error');
+        return;
+      }
+      e.preventDefault();
+      const blob = imageItem.getAsFile();
+      if (blob) acceptImageBlob(blob, activeSlideIndex);
+    });
+
+    (async function bootTweetEditor() {
+    slidesState = loadState();
+    const durableDocument = await readTweetImage(STORAGE_KEY + ':document').catch(() => null);
+    if (durableDocument) {
+      try {
+        const parsed = JSON.parse(durableDocument);
+        if (Array.isArray(parsed) && parsed.length) slidesState = normalizeTweetSlides(expandTweetSlidesFromStorage(parsed));
+      } catch (_) {}
+    }
+    // Migra automaticamente fotos de documentos antigos que ainda estavam no
+    // localStorage para o armazenamento próprio de imagens do navegador.
+    await hydrateTweetStoredImages();
+    await persistTweetSlidesState();
+    // Restaura as fotos próprias do usuário depois de recuperar o documento.
+    // A interface pode abrir antes; cada slide é redesenhado assim que sua
+    // imagem estiver disponível.
+    const shortcutModifier = /Mac|iPhone|iPad/.test(navigator.platform || '') ? '⌘' : 'Ctrl+';
+    const shortcutHint = document.querySelector('.stage-shortcut');
+    if (shortcutHint) shortcutHint.textContent = shortcutModifier + 'V · imagem';
+    configureHubSession();
+    applyUiTheme();
+    setupProfileControls();
+    setupTweetImageComposer();
+    setupGlobalTweetFontSizeControl();
+    document.getElementById('btn-download-all').addEventListener('click', downloadAll);
+    document.getElementById('btn-download-current')?.addEventListener('click', downloadCurrentTweetSlide);
+    document.getElementById('btn-add-slide')?.addEventListener('click', addSlide);
+    document.getElementById('btn-delete-slide')?.addEventListener('click', deleteCurrentSlide);
+    document.getElementById('btn-reset').addEventListener('click', resetTexts);
+    document.getElementById('btn-restart-carousel').addEventListener('click', restartCarousel);
+    document.getElementById('btn-ui-theme').addEventListener('click', toggleUiTheme);
+    document.getElementById('btn-theme').addEventListener('click', toggleTheme);
+    document.querySelectorAll('[data-ratio]').forEach(btn => {
+      btn.addEventListener('click', () => setRatio(btn.dataset.ratio));
+    });
+    document.getElementById('btn-publish-ig')?.addEventListener('click', publishInstagram);
+    document.getElementById('btn-send-tg')?.addEventListener('click', sendToTelegram);
+    document.getElementById('btn-config-tg')?.addEventListener('click', openTgModal);
+    document.getElementById('tg-cancel')?.addEventListener('click', closeTgModal);
+    document.getElementById('tg-test')?.addEventListener('click', tgTestConnection);
+    document.getElementById('tg-modal')?.addEventListener('click', (e) => {
+      if (e.target.id === 'tg-modal') closeTgModal();
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && document.getElementById('avatar-crop-modal')?.classList.contains('visible')) {
+        event.preventDefault();
+        closeAvatarCropper();
+        return;
+      }
+      if (event.key === 'Escape' && document.getElementById('tg-modal')?.classList.contains('visible')) {
+        event.preventDefault();
+        closeTgModal();
+      }
+    });
+    loadCaptionFromStorage();
+    armEditorUndo();
+
+    avatarImg = new Image();
+    avatarImg.onload = () => { buildUI(); applyTheme(); applyRatio(); slidesState.forEach((_, i) => loadSlideImage(i)); };
+    avatarImg.onerror = () => { buildUI(); applyTheme(); applyRatio(); slidesState.forEach((_, i) => loadSlideImage(i)); };
+    avatarImg.src = profileState.avatar;
+    })().catch(error => {
+      document.getElementById('save-status').textContent = 'erro ao abrir: ' + error.message;
+      console.error(error);
+    });
+  </script>
+</body>
+</html>
